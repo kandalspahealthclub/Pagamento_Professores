@@ -811,6 +811,87 @@
             margin-top: 15px;
             font-weight: bold;
         }
+
+        /* Horário Fixo */
+        .modo-fixo-ativo .grade-container {
+            outline: 3px solid #764ba2;
+            outline-offset: -3px;
+            border-radius: 20px;
+        }
+
+        .badge-fixo {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 10px;
+            opacity: 0.85;
+        }
+
+        .btn-modo-fixo {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(102,126,234,0.3);
+        }
+
+        .btn-modo-fixo.ativo {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            box-shadow: 0 3px 10px rgba(40,167,69,0.4);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 3px 10px rgba(40,167,69,0.4); }
+            50% { box-shadow: 0 3px 18px rgba(40,167,69,0.7); }
+        }
+
+        .barra-modo-fixo {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
+            border: 2px solid #764ba2;
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .barra-modo-fixo.visivel { display: flex; }
+
+        .barra-modo-fixo span {
+            font-weight: bold;
+            color: #764ba2;
+            font-size: 13px;
+        }
+
+        .btn-fixo-acao {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-fixo-copiar { background: #667eea; color: white; }
+        .btn-fixo-copiar:hover { background: #5a6fd8; }
+        .btn-fixo-limpar { background: #dc3545; color: white; }
+        .btn-fixo-limpar:hover { background: #c82333; }
+
+        .aula-slot.fixo { opacity: 0.88; }
+        .aula-slot.fixo-override { outline: 2px solid #ffc107; outline-offset: -2px; }
     </style>
 </head>
 <body>
@@ -862,8 +943,18 @@
                         <button class="btn-semana" onclick="mudarSemana(-1)">← Semana Anterior</button>
                         <div class="info-semana" id="infoSemana">Semana de 29 Set a 05 Out 2025</div>
                         <button class="btn-semana" onclick="mudarSemana(1)">Próxima Semana →</button>
+                        <button class="btn-modo-fixo" id="btnModoFixo" onclick="toggleModoFixo()" title="Ativar edição de horário fixo semanal">🔁 Horário Fixo</button>
                     </div>
-                    
+
+                    <!-- Barra de ações do modo fixo -->
+                    <div class="barra-modo-fixo" id="barraModoFixo">
+                        <span>🔁 Modo de Edição: Horário Fixo Semanal — As aulas que adicionar aqui irão repetir-se em todas as semanas.</span>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn-fixo-acao btn-fixo-copiar" onclick="copiarSemanaParaFixo()">📋 Copiar Semana Atual → Fixo</button>
+                            <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()">🗑️ Limpar Horário Fixo</button>
+                        </div>
+                    </div>
+
                     <h2>📅 Grade Semanal de Aulas</h2>
                     <div class="grade-header" id="gradeHeader">
                         <!-- Cabeçalho será gerado via JavaScript -->
@@ -1093,20 +1184,28 @@
         function enviarEstadoParaFirebase() {
             if (!firebaseDb) return;
             
+            const EXCLUIR = ['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'];
+
             const estado = {
                 professores: JSON.parse(localStorage.getItem('ginasio_professores') || '[]'),
                 aulas: JSON.parse(localStorage.getItem('ginasio_aulas') || '[]'),
                 horarios: JSON.parse(localStorage.getItem('ginasio_horarios') || '[]'),
-                grade: {}
+                grade: {},
+                fixo: {}
             };
 
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key.includes('-') && !['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'].includes(key)) {
-                    try {
+                if (EXCLUIR.includes(key)) continue;
+                try {
+                    if (key.startsWith('fixed-')) {
+                        // Chaves do horário fixo
+                        estado.fixo[key] = JSON.parse(localStorage.getItem(key) || '{}');
+                    } else if (key.includes('-')) {
+                        // Chaves específicas por data (YYYY-MM-DD-HH:MM)
                         estado.grade[key] = JSON.parse(localStorage.getItem(key) || '{}');
-                    } catch(e) {}
-                }
+                    }
+                } catch(e) {}
             }
 
             firebaseDb.collection('gyms').doc('default').set(estado)
@@ -1188,10 +1287,11 @@
                         isSyncingFromFirebase = true;
                         const data = doc.data();
 
-                        // Limpar chaves de horários específicas
+                        // Limpar chaves de horários específicos e fixos do localStorage
+                        const EXCLUIR = ['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'];
                         for (let i = localStorage.length - 1; i >= 0; i--) {
                             const key = localStorage.key(i);
-                            if (key.includes('-') && !['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'].includes(key)) {
+                            if (!EXCLUIR.includes(key) && key.includes('-')) {
                                 originalRemoveItem.call(localStorage, key);
                             }
                         }
@@ -1203,6 +1303,13 @@
                         if (data.grade) {
                             Object.keys(data.grade).forEach(key => {
                                 originalSetItem.call(localStorage, key, JSON.stringify(data.grade[key]));
+                            });
+                        }
+
+                        // Restaurar horários fixos
+                        if (data.fixo) {
+                            Object.keys(data.fixo).forEach(key => {
+                                originalSetItem.call(localStorage, key, JSON.stringify(data.fixo[key]));
                             });
                         }
 
@@ -1431,22 +1538,20 @@
             // Obter TODOS os dias do mês
             const diasDoMes = obterTodosDiasDoMes(mesSelecionado, anoSelecionado);
             
-            // Calcular para cada dia do mês (AGORA COM CHAVES ESPECÍFICAS)
+            // Calcular para cada dia do mês (dados específicos + fallback para fixo)
             diasDoMes.forEach(dia => {
                 horarios.forEach(hora => {
-                    const chaveHorario = criarChaveHorario(dia, hora);
-                    const dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+                    // Usa obterDadosSlot para considerar fixo quando não há dado específico
+                    const { dados } = obterDadosSlot(dia, hora);
                     
                     if (dados.aulaId && dados.professorId) {
                         const aula = aulas.find(a => a.id == dados.aulaId);
                         const professorId = dados.professorId;
                         
                         if (aula && somatorio[professorId]) {
-                            // Atualizar total geral
                             somatorio[professorId].total += aula.preco;
                             somatorio[professorId].aulas += 1;
                             
-                            // Atualizar detalhes por tipo de aula
                             if (!somatorio[professorId].detalhes[aula.nome]) {
                                 somatorio[professorId].detalhes[aula.nome] = {
                                     quantidade: 0,
@@ -1735,6 +1840,105 @@
         let professorSelecionado = null;
         let horarioEditando = null;
         let semanaAtual = 0;
+        let modoFixoAtivo = false;
+
+        // ---- HORÁRIO FIXO: Helpers ----
+
+        // Cria a chave do template fixo: fixed-WEEKDAY(0=Seg..6=Dom)-HH:MM
+        function criarChaveFixo(diaDaSemana, hora) {
+            return `fixed-${diaDaSemana}-${hora}`;
+        }
+
+        // Obtém dados do template fixo para um dia da semana e hora
+        function obterHorarioFixo(diaDaSemana, hora) {
+            const chave = criarChaveFixo(diaDaSemana, hora);
+            try {
+                return JSON.parse(localStorage.getItem(chave) || '{}');
+            } catch(e) { return {}; }
+        }
+
+        // Guarda dados no template fixo
+        function guardarHorarioFixo(diaDaSemana, hora, dados) {
+            const chave = criarChaveFixo(diaDaSemana, hora);
+            if (dados && Object.keys(dados).length > 0) {
+                localStorage.setItem(chave, JSON.stringify(dados));
+            } else {
+                localStorage.removeItem(chave);
+            }
+        }
+
+        // Obtém dados de um slot: prioriza dados específicos da data; fallback para fixo
+        // Retorna { dados, fonte } onde fonte é 'especifico' | 'fixo' | 'vazio'
+        function obterDadosSlot(dia, hora) {
+            const chaveEspecifica = criarChaveHorario(dia, hora);
+            let dadosEspecificos = {};
+            try { dadosEspecificos = JSON.parse(localStorage.getItem(chaveEspecifica) || '{}'); } catch(e) {}
+
+            if (dadosEspecificos.aulaId || dadosEspecificos.professorId) {
+                return { dados: dadosEspecificos, fonte: 'especifico', chave: chaveEspecifica };
+            }
+
+            // Dia da semana: 0=Segunda ... 6=Domingo (conforme diasSemana array)
+            const diaSemana = ((dia.getDay() + 6) % 7); // converte domingo=0 do JS para 6
+            const dadosFixos = obterHorarioFixo(diaSemana, hora);
+
+            if (dadosFixos.aulaId || dadosFixos.professorId) {
+                return { dados: dadosFixos, fonte: 'fixo', chave: chaveEspecifica };
+            }
+
+            return { dados: {}, fonte: 'vazio', chave: chaveEspecifica };
+        }
+
+        // Toggle do modo de edição de horário fixo
+        function toggleModoFixo() {
+            modoFixoAtivo = !modoFixoAtivo;
+            const btn = document.getElementById('btnModoFixo');
+            const barra = document.getElementById('barraModoFixo');
+            if (modoFixoAtivo) {
+                btn.classList.add('ativo');
+                btn.textContent = '✅ Editar Fixo (Ativo)';
+                barra.classList.add('visivel');
+            } else {
+                btn.classList.remove('ativo');
+                btn.textContent = '🔁 Horário Fixo';
+                barra.classList.remove('visivel');
+            }
+            renderizarGradeHorarios();
+        }
+
+        // Copia os dados da semana atual para o template fixo
+        function copiarSemanaParaFixo() {
+            if (!confirm('Copiar os horários da semana atual para o template fixo? O template fixo anterior será substituído.')) return;
+            const dias = obterDiasDaSemana(semanaAtual);
+            // Limpar fixo antes
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) originalRemoveItem.call(localStorage, k);
+            }
+            dias.forEach((dia, idx) => {
+                horarios.forEach(hora => {
+                    const chave = criarChaveHorario(dia, hora);
+                    let dados = {};
+                    try { dados = JSON.parse(localStorage.getItem(chave) || '{}'); } catch(e) {}
+                    if (dados.aulaId || dados.professorId) {
+                        guardarHorarioFixo(idx, hora, dados);
+                    }
+                });
+            });
+            alert('Horário fixo atualizado com os dados da semana atual!');
+            renderizarGradeHorarios();
+        }
+
+        // Limpa todo o template fixo
+        function limparHorarioFixo() {
+            if (!confirm('Tem a certeza que quer apagar o horário fixo semanal? Esta ação é irreversível.')) return;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) localStorage.removeItem(k);
+            }
+            renderizarGradeHorarios();
+            alert('Horário fixo apagado.');
+        }
 
         // Funções para datas
         function obterDiasDaSemana(semanaOffset = 0) {
@@ -1823,15 +2027,31 @@
                 `;
                 container.appendChild(horaSlot);
                 
-                // AGORA COM CHAVES ESPECÍFICAS POR DATA
-                dias.forEach(dia => {
-                    const chaveHorario = criarChaveHorario(dia, hora);
-                    const dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+                // MODO FIXO ou ESPECÍFICO POR DATA
+                dias.forEach((dia, diaIdx) => {
+                    const diaSemana = ((dia.getDay() + 6) % 7);
+                    const chaveEspecifica = criarChaveHorario(dia, hora);
+                    const chaveFixo = criarChaveFixo(diaSemana, hora);
+
+                    // Em modo fixo: edita o template. Fora do modo fixo: usa camada dupla.
+                    let dados, chaveParaEdicao, vemDoFixo;
+
+                    if (modoFixoAtivo) {
+                        dados = obterHorarioFixo(diaSemana, hora);
+                        chaveParaEdicao = chaveFixo;
+                        vemDoFixo = false; // estamos em modo edição direta do fixo
+                    } else {
+                        const resultado = obterDadosSlot(dia, hora);
+                        dados = resultado.dados;
+                        chaveParaEdicao = resultado.chave; // sempre a chave específica por data
+                        vemDoFixo = resultado.fonte === 'fixo';
+                    }
+
                     const aula = aulas.find(a => a.id == dados.aulaId);
                     const professor = professores.find(p => p.id == dados.professorId);
                     
                     const slot = document.createElement('div');
-                    slot.className = 'aula-slot';
+                    slot.className = 'aula-slot' + (vemDoFixo ? ' fixo' : '');
                     
                     if (aula) {
                         slot.style.background = aula.cor;
@@ -1839,11 +2059,14 @@
                         slot.style.background = '#6c757d';
                     } else {
                         slot.className += ' vazia';
-                        slot.style.background = '#f8f9fa';
+                        slot.style.background = modoFixoAtivo ? 'rgba(102,126,234,0.07)' : '#f8f9fa';
                     }
                     
                     let conteudo = '';
-                    
+                    if (vemDoFixo) {
+                        conteudo += `<span class="badge-fixo" title="Horário fixo semanal">🔁</span>`;
+                    }
+
                     if (aula) {
                         conteudo += `<div class="aula-nome-grade">${aula.nome}</div>`;
                         conteudo += `<div class="aula-preco-grade">€ ${aula.preco.toFixed(2)}</div>`;
@@ -1852,21 +2075,25 @@
                     if (professor) {
                         conteudo += `<div class="aula-professor-grade">👨‍🏫 ${professor.nome}</div>`;
                     }
-                    
+
+                    // Em modo fixo, os botões de remover operam na chave fixa
                     let botoesRemocao = '';
-                    if (aula) {
-                        botoesRemocao += `<button class="btn-remover-aula" onclick="removerAulaDoHorario('${chaveHorario}')">×</button>`;
-                    }
-                    if (professor) {
-                        botoesRemocao += `<button class="btn-remover-professor" onclick="removerProfessorDoHorario('${chaveHorario}')">×</button>`;
+                    if (modoFixoAtivo) {
+                        if (aula) botoesRemocao += `<button class="btn-remover-aula" onclick="removerAulaDoHorarioFixo('${chaveFixo}')">×</button>`;
+                        if (professor) botoesRemocao += `<button class="btn-remover-professor" onclick="removerProfessorDoHorarioFixo('${chaveFixo}')">×</button>`;
+                    } else {
+                        if (aula) botoesRemocao += `<button class="btn-remover-aula" onclick="removerAulaDoHorario('${chaveParaEdicao}')">×</button>`;
+                        if (professor) botoesRemocao += `<button class="btn-remover-professor" onclick="removerProfessorDoHorario('${chaveParaEdicao}')">×</button>`;
                     }
                     
                     let botoesAdicao = '';
                     if (!aula || !professor) {
+                        const chaveModal = modoFixoAtivo ? chaveFixo : chaveParaEdicao;
+                        const diaLabel = modoFixoAtivo ? diasSemana[diaSemana] : formatarDataParaDia(dia);
                         botoesAdicao = `
                             <div class="botoes-adicionar">
-                                ${!aula ? `<button class="btn-add-horario" onclick="abrirModalRapido('${chaveHorario}', '${formatarDataParaDia(dia)}', '${hora}')">+ Aula</button>` : ''}
-                                ${!professor ? `<button class="btn-add-professor" onclick="abrirModalProfessorRapido('${chaveHorario}', '${formatarDataParaDia(dia)}', '${hora}')">+ Professor</button>` : ''}
+                                ${!aula ? `<button class="btn-add-horario" onclick="abrirModalRapido('${chaveModal}', '${diaLabel}', '${hora}')">+ Aula</button>` : ''}
+                                ${!professor ? `<button class="btn-add-professor" onclick="abrirModalProfessorRapido('${chaveModal}', '${diaLabel}', '${hora}')">+ Professor</button>` : ''}
                             </div>
                         `;
                     }
@@ -2408,6 +2635,33 @@
                     localStorage.removeItem(chaveHorario);
                 } else {
                     localStorage.setItem(chaveHorario, JSON.stringify(dados));
+                }
+                renderizarGradeHorarios();
+            }
+        }
+
+        // Funções de remoção do horário FIXO
+        function removerAulaDoHorarioFixo(chaveFixo) {
+            if (confirm('Remover esta aula do horário fixo semanal?')) {
+                const dados = JSON.parse(localStorage.getItem(chaveFixo) || '{}');
+                delete dados.aulaId;
+                if (Object.keys(dados).length === 0) {
+                    localStorage.removeItem(chaveFixo);
+                } else {
+                    localStorage.setItem(chaveFixo, JSON.stringify(dados));
+                }
+                renderizarGradeHorarios();
+            }
+        }
+
+        function removerProfessorDoHorarioFixo(chaveFixo) {
+            if (confirm('Remover este professor do horário fixo semanal?')) {
+                const dados = JSON.parse(localStorage.getItem(chaveFixo) || '{}');
+                delete dados.professorId;
+                if (Object.keys(dados).length === 0) {
+                    localStorage.removeItem(chaveFixo);
+                } else {
+                    localStorage.setItem(chaveFixo, JSON.stringify(dados));
                 }
                 renderizarGradeHorarios();
             }
