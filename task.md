@@ -1,0 +1,6 @@
+- [x] Gerar os ícones do PWA (icon-192.png e icon-512.png)
+- [x] Criar o arquivo manifest.json
+- [x] Criar o Service Worker (sw.js)
+- [x] Criar o arquivo index.html (cópia de Pagamento Professores.html com suporte a PWA)
+- [x] Criar o arquivo de instruções (INSTRUCTIONS.md) para GitHub e Firebase Hosting
+- [x] Verificar a estrutura dos arquivos criados

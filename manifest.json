@@ -1,0 +1,23 @@
+{
+  "name": "Gestão de Ginásio - Aulas e Horários",
+  "short_name": "Gestão Ginásio",
+  "description": "Sistema de Gestão de Ginásio, Aulas, Horários e Pagamento de Professores.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "orientation": "any",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
