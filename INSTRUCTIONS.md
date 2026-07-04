@@ -90,3 +90,41 @@ firebase deploy
 ```
 
 O Firebase disponibilizará um link de acesso seguro (ex: `https://seu-projeto.web.app`), perfeito para o correto funcionamento de PWAs e instalação offline.
+
+---
+
+## Parte 3: Configurar a Base de Dados (Cloud Firestore) ☁️
+
+Para que a sincronização em tempo real funcione, precisa de ativar a base de dados Firestore no seu projeto Firebase:
+
+### 1. Ativar o Cloud Firestore
+1. Vá à [Consola do Firebase](https://console.firebase.google.com/) e entre no seu projeto.
+2. No menu lateral, clique em **Build** (Construir) -> **Firestore Database**.
+3. Clique em **Create database** (Criar base de dados).
+4. Escolha a localização da base de dados mais próxima de si (ex: `europe-west` ou similar).
+5. Selecione **Start in test mode** (Iniciar em modo de teste) para poder começar a ler e escrever dados imediatamente.
+6. Clique em **Create** (Criar).
+
+> [!WARNING]
+> O modo de teste deixa a base de dados aberta a qualquer utilizador por um período inicial (normalmente 30 dias). Para produção, configure as regras de segurança no separador **Rules** do Firestore para restringir o acesso.
+
+### 2. Obter as Credenciais da Web App
+1. No menu lateral da consola do Firebase, clique na **Engrenagem** ao lado de "Project Overview" -> **Project settings** (Definições do projeto).
+2. Na secção **Your apps**, clique no ícone **`Web (</>)`** para registar a aplicação se ainda não o tiver feito.
+3. Copie o objeto `firebaseConfig` gerado, que se parece com isto:
+   ```javascript
+   const firebaseConfig = {
+     apiKey: "AIzaSy...",
+     authDomain: "seu-projeto.firebaseapp.com",
+     projectId: "seu-projeto",
+     storageBucket: "seu-projeto.appspot.com",
+     messagingSenderId: "...",
+     appId: "..."
+   };
+   ```
+
+### 3. Ligar a Aplicação à Base de Dados
+1. Abra a sua aplicação no navegador (pode ser o arquivo local [index.html](file:///c:/Users/KandalSPA/Desktop/Pagamento%20Professores/index.html) ou a versão publicada).
+2. Clique na **Engrenagem (⚙️)** que surge no topo do ecrã, abaixo do título.
+3. Cole as credenciais que copiou no passo anterior e clique em **Conectar e Sincronizar**.
+4. O indicador mudará para **Firebase: Ligado (Sincronizado)** (ponto verde) e todos os seus dados (professores, aulas e grelha de horários) passarão a ser guardados e atualizados na nuvem em tempo real!

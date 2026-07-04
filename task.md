@@ -1,6 +1,6 @@
-- [x] Gerar os ícones do PWA (icon-192.png e icon-512.png)
-- [x] Criar o arquivo manifest.json
-- [x] Criar o Service Worker (sw.js)
-- [x] Criar o arquivo index.html (cópia de Pagamento Professores.html com suporte a PWA)
-- [x] Criar o arquivo de instruções (INSTRUCTIONS.md) para GitHub e Firebase Hosting
-- [x] Verificar a estrutura dos arquivos criados
+- [x] Adicionar os scripts SDK do Firebase no head do index.html
+- [x] Adicionar o badge de status e botão de configuração do Firebase
+- [x] Adicionar o modal de configuração de credenciais no index.html
+- [x] Adicionar a lógica de sincronização Firestore (Firebase init, onSnapshot, localStorage interceptors)
+- [x] Adicionar as novas dependências do Firebase SDK no cache do sw.js
+- [x] Atualizar as instruções em INSTRUCTIONS.md explicando como configurar a base de dados

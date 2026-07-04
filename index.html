@@ -9,6 +9,9 @@
     <title>🏋️ Gestão de Ginásio - Aulas e Horários</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -814,6 +817,17 @@
     <div class="container">
         <h1>🏋️ Gestão de Ginásio - Aulas e Horários</h1>
         
+        <!-- Status Firebase e Configuração -->
+        <div id="sync-container" style="text-align: center; margin-bottom: 25px;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.15); padding: 8px 16px; border-radius: 30px; backdrop-filter: blur(10px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2); color: white;">
+                <span id="sync-dot" style="width: 10px; height: 10px; border-radius: 50%; background-color: #ffc107; display: inline-block; box-shadow: 0 0 8px #ffc107; transition: all 0.3s ease;"></span>
+                <span id="sync-text" style="font-size: 13px; font-weight: 500; font-family: sans-serif;">Firebase: Não configurado</span>
+                <button onclick="abrirModalFirebaseConfig()" style="background: none; border: none; color: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 2px; margin-left: 6px; opacity: 0.8; transition: opacity 0.2s; font-size: 14px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8" title="Configurar Firebase">
+                    ⚙️
+                </button>
+            </span>
+        </div>
+        
         <div class="dashboard">
             <!-- Painel Lateral -->
             <div class="sidebar">
@@ -892,6 +906,32 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Firebase Config -->
+    <div class="modal" id="modalFirebaseConfig">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>🔥 Configuração do Firebase</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Cole aqui o código de configuração do seu projeto Firebase Web. Este código é gerado na consola do Firebase ao criar/adicionar uma Web App.</p>
+            <form id="formFirebaseConfig" onsubmit="salvarFirebaseConfig(event)">
+                <div class="form-group">
+                    <label>Objeto JSON de Configuração:</label>
+                    <textarea id="firebaseConfigText" style="width: 100%; height: 160px; font-family: monospace; font-size: 12px; padding: 10px; border: 2px solid #ddd; border-radius: 8px; resize: vertical;" placeholder='const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+};' required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="fecharModalFirebaseConfig()">Cancelar</button>
+                    <button type="button" class="btn-delete" style="background-color: #dc3545; color: white;" onclick="limparFirebaseConfig()">Desligar Firebase</button>
+                    <button type="submit" class="btn-primary">Conectar e Sincronizar</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1019,6 +1059,223 @@
     </div>
 
     <script>
+        // --- CONFIGURAÇÃO E SINCRONIZAÇÃO FIREBASE ---
+        let isSyncingFromFirebase = false;
+        let firebaseDb = null;
+        let originalSetItem = localStorage.setItem;
+        let originalRemoveItem = localStorage.removeItem;
+        let firebasePushTimeout = null;
+
+        // Sobrescrever localStorage.setItem para capturar alterações e enviar ao Firestore
+        localStorage.setItem = function(key, value) {
+            originalSetItem.apply(this, arguments);
+            if (!isSyncingFromFirebase && firebaseDb && key !== 'ginasio_firebase_config') {
+                agendarEnvioParaFirebase();
+            }
+        };
+
+        // Sobrescrever localStorage.removeItem
+        localStorage.removeItem = function(key) {
+            originalRemoveItem.apply(this, arguments);
+            if (!isSyncingFromFirebase && firebaseDb && key !== 'ginasio_firebase_config') {
+                agendarEnvioParaFirebase();
+            }
+        };
+
+        function agendarEnvioParaFirebase() {
+            if (firebasePushTimeout) clearTimeout(firebasePushTimeout);
+            atualizarBadgeStatus('syncing');
+            firebasePushTimeout = setTimeout(() => {
+                enviarEstadoParaFirebase();
+            }, 1000);
+        }
+
+        function enviarEstadoParaFirebase() {
+            if (!firebaseDb) return;
+            
+            const estado = {
+                professores: JSON.parse(localStorage.getItem('ginasio_professores') || '[]'),
+                aulas: JSON.parse(localStorage.getItem('ginasio_aulas') || '[]'),
+                horarios: JSON.parse(localStorage.getItem('ginasio_horarios') || '[]'),
+                grade: {}
+            };
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('-') && !['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'].includes(key)) {
+                    try {
+                        estado.grade[key] = JSON.parse(localStorage.getItem(key) || '{}');
+                    } catch(e) {}
+                }
+            }
+
+            firebaseDb.collection('gyms').doc('default').set(estado)
+                .then(() => {
+                    atualizarBadgeStatus('connected');
+                })
+                .catch(err => {
+                    console.error("Erro ao enviar para Firebase:", err);
+                    atualizarBadgeStatus('error');
+                });
+        }
+
+        function atualizarBadgeStatus(status) {
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            if (!dot || !text) return;
+
+            switch(status) {
+                case 'connected':
+                    dot.style.backgroundColor = '#28a745';
+                    dot.style.boxShadow = '0 0 8px #28a745';
+                    text.innerText = 'Firebase: Ligado (Sincronizado)';
+                    break;
+                case 'connecting':
+                    dot.style.backgroundColor = '#ffc107';
+                    dot.style.boxShadow = '0 0 8px #ffc107';
+                    text.innerText = 'Firebase: A ligar...';
+                    break;
+                case 'syncing':
+                    dot.style.backgroundColor = '#ffc107';
+                    dot.style.boxShadow = '0 0 8px #ffc107';
+                    text.innerText = 'Firebase: A guardar alterações...';
+                    break;
+                case 'error':
+                    dot.style.backgroundColor = '#dc3545';
+                    dot.style.boxShadow = '0 0 8px #dc3545';
+                    text.innerText = 'Firebase: Erro na ligação';
+                    break;
+                case 'disconnected':
+                default:
+                    dot.style.backgroundColor = '#6c757d';
+                    dot.style.boxShadow = 'none';
+                    text.innerText = 'Firebase: Não configurado';
+                    break;
+            }
+        }
+
+        function inicializarSincronizacaoFirebase() {
+            const configStr = localStorage.getItem('ginasio_firebase_config');
+            if (!configStr) {
+                atualizarBadgeStatus('disconnected');
+                return;
+            }
+
+            try {
+                const config = JSON.parse(configStr);
+                firebase.initializeApp(config);
+                firebaseDb = firebase.firestore();
+                
+                atualizarBadgeStatus('connecting');
+
+                firebaseDb.collection('gyms').doc('default').onSnapshot(doc => {
+                    if (doc.exists) {
+                        isSyncingFromFirebase = true;
+                        const data = doc.data();
+
+                        // Limpar chaves de horários específicas
+                        for (let i = localStorage.length - 1; i >= 0; i--) {
+                            const key = localStorage.key(i);
+                            if (key.includes('-') && !['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'].includes(key)) {
+                                originalRemoveItem.call(localStorage, key);
+                            }
+                        }
+
+                        if (data.professores) originalSetItem.call(localStorage, 'ginasio_professores', JSON.stringify(data.professores));
+                        if (data.aulas) originalSetItem.call(localStorage, 'ginasio_aulas', JSON.stringify(data.aulas));
+                        if (data.horarios) originalSetItem.call(localStorage, 'ginasio_horarios', JSON.stringify(data.horarios));
+                        
+                        if (data.grade) {
+                            Object.keys(data.grade).forEach(key => {
+                                originalSetItem.call(localStorage, key, JSON.stringify(data.grade[key]));
+                            });
+                        }
+
+                        carregarDados();
+                        renderizarProfessores();
+                        renderizarAulas();
+                        renderizarGradeHorarios();
+                        if (typeof renderizarResumoMensalCompleto === 'function') {
+                            renderizarResumoMensalCompleto();
+                        }
+
+                        isSyncingFromFirebase = false;
+                        atualizarBadgeStatus('connected');
+                    } else {
+                        console.log("Inicializando Firestore com dados locais...");
+                        enviarEstadoParaFirebase();
+                    }
+                }, err => {
+                    console.error("Erro na sincronização Firebase:", err);
+                    atualizarBadgeStatus('error');
+                });
+            } catch(e) {
+                console.error("Erro ao inicializar Firebase:", e);
+                atualizarBadgeStatus('error');
+            }
+        }
+
+        // Modais de Configuração do Firebase
+        function abrirModalFirebaseConfig() {
+            const modal = document.getElementById('modalFirebaseConfig');
+            const textarea = document.getElementById('firebaseConfigText');
+            modal.style.display = 'flex';
+            
+            const config = localStorage.getItem('ginasio_firebase_config');
+            if (config) {
+                textarea.value = JSON.stringify(JSON.parse(config), null, 2);
+            } else {
+                textarea.value = '';
+            }
+        }
+
+        // Fechar modal de configuração
+        function fecharModalFirebaseConfig() {
+            document.getElementById('modalFirebaseConfig').style.display = 'none';
+        }
+
+        function salvarFirebaseConfig(event) {
+            event.preventDefault();
+            const texto = document.getElementById('firebaseConfigText').value.trim();
+            
+            try {
+                let configObj = null;
+                let textoLimpo = texto.replace(/```(javascript|json)?/g, '').trim();
+                
+                try {
+                    configObj = JSON.parse(textoLimpo);
+                } catch(e) {
+                    const match = textoLimpo.match(/\{[\s\S]*\}/);
+                    if (match) {
+                        const objTexto = match[0]
+                            .replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":')
+                            .replace(/'/g, '"')
+                            .replace(/,\s*}/g, '}')
+                            .replace(/\/\/.*$/gm, '');
+                        configObj = JSON.parse(objTexto);
+                    }
+                }
+                
+                if (configObj && configObj.apiKey && configObj.projectId) {
+                    localStorage.setItem('ginasio_firebase_config', JSON.stringify(configObj));
+                    alert("Configuração guardada com sucesso! A recarregar...");
+                    location.reload();
+                } else {
+                    throw new Error();
+                }
+            } catch(err) {
+                alert("Erro ao ler a configuração. Por favor certifique-se de que colou o objeto de configuração correto.");
+            }
+        }
+
+        function limparFirebaseConfig() {
+            if (confirm("Deseja desligar o Firebase e voltar a usar armazenamento local simples?")) {
+                localStorage.removeItem('ginasio_firebase_config');
+                alert("Configuração apagada. A recarregar...");
+                location.reload();
+            }
+        }
+
         // Funções para guardar e carregar dados do localStorage
         function carregarDados() {
             // Carregar professores
@@ -2148,6 +2405,7 @@
             renderizarProfessores();
             renderizarAulas();
             renderizarGradeHorarios();
+            inicializarSincronizacaoFirebase();
         });
 
         // Fechar modais ao clicar fora
@@ -2156,11 +2414,13 @@
             const modalAula = document.getElementById('modalAula');
             const modalRapido = document.getElementById('modalRapido');
             const modalProfessorRapido = document.getElementById('modalProfessorRapido');
+            const modalFirebaseConfig = document.getElementById('modalFirebaseConfig');
             
             if (event.target === modalProfessor) fecharModalProfessor();
             if (event.target === modalAula) fecharModalAula();
             if (event.target === modalRapido) fecharModalRapido();
             if (event.target === modalProfessorRapido) fecharModalProfessorRapido();
+            if (event.target === modalFirebaseConfig) fecharModalFirebaseConfig();
         }
 
         // Registrar Service Worker para suporte offline e PWA
