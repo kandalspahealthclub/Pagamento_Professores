@@ -1155,14 +1155,29 @@
         }
 
         function inicializarSincronizacaoFirebase() {
-            const configStr = localStorage.getItem('ginasio_firebase_config');
-            if (!configStr) {
-                atualizarBadgeStatus('disconnected');
-                return;
+            let configStr = localStorage.getItem('ginasio_firebase_config');
+            let config = null;
+
+            if (configStr) {
+                try {
+                    config = JSON.parse(configStr);
+                } catch(e) {}
+            }
+
+            // Configuração padrão do Firebase
+            if (!config) {
+                config = {
+                    apiKey: "AIzaSyBdfFVyykgYtp6R1l7NGMJ8v4Fd1briIaA",
+                    authDomain: "pagamento-profs.firebaseapp.com",
+                    projectId: "pagamento-profs",
+                    storageBucket: "pagamento-profs.firebasestorage.app",
+                    messagingSenderId: "684859509531",
+                    appId: "1:684859509531:web:9f62c4657bcff3f62561be"
+                };
+                localStorage.setItem('ginasio_firebase_config', JSON.stringify(config));
             }
 
             try {
-                const config = JSON.parse(configStr);
                 firebase.initializeApp(config);
                 firebaseDb = firebase.firestore();
                 
@@ -1240,19 +1255,22 @@
             
             try {
                 let configObj = null;
-                let textoLimpo = texto.replace(/```(javascript|json)?/g, '').trim();
                 
+                // 1. Tentar analisar como JSON direto
                 try {
-                    configObj = JSON.parse(textoLimpo);
-                } catch(e) {
-                    const match = textoLimpo.match(/\{[\s\S]*\}/);
+                    configObj = JSON.parse(texto);
+                } catch(e) {}
+                
+                // 2. Se falhar, tentar extrair e avaliar o objeto JavaScript
+                if (!configObj) {
+                    const match = texto.match(/\{[\s\S]*\}/);
                     if (match) {
-                        const objTexto = match[0]
-                            .replace(/([a-zA-Z0-9_]+)\s*:/g, '"$1":')
-                            .replace(/'/g, '"')
-                            .replace(/,\s*}/g, '}')
-                            .replace(/\/\/.*$/gm, '');
-                        configObj = JSON.parse(objTexto);
+                        try {
+                            // Cria uma função temporária para devolver o objeto literal avaliado de forma segura
+                            configObj = new Function("return " + match[0])();
+                        } catch(err) {
+                            console.error("Erro na interpretação do objeto JS:", err);
+                        }
                     }
                 }
                 
@@ -1261,10 +1279,10 @@
                     alert("Configuração guardada com sucesso! A recarregar...");
                     location.reload();
                 } else {
-                    throw new Error();
+                    throw new Error("Formato inválido ou campos em falta.");
                 }
             } catch(err) {
-                alert("Erro ao ler a configuração. Por favor certifique-se de que colou o objeto de configuração correto.");
+                alert("Erro ao ler a configuração. Por favor certifique-se de que colou o bloco de configuração correto do Firebase Console.");
             }
         }
 
