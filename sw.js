@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gestao-ginasio-v1';
+const CACHE_NAME = 'gestao-ginasio-v2';
 const ASSETS = [
   './',
   './index.html',

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -677,6 +677,14 @@
             font-weight: bold;
         }
 
+        .btn-semana.btn-hoje {
+            background: #28a745;
+        }
+
+        .btn-semana.btn-hoje:hover {
+            background: #218838;
+        }
+
         .info-semana {
             font-weight: bold;
             color: #333;
@@ -737,6 +745,26 @@
             width: auto;
             padding: 8px 12px;
             font-size: 14px;
+        }
+
+        .btn-mes-atual {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-mes-atual:hover {
+            background: #218838;
+            transform: translateY(-1px);
         }
 
         .info-calculo {
@@ -843,8 +871,9 @@
                 <div class="grade-container">
                     <div class="navegacao-semana">
                         <button class="btn-semana" onclick="mudarSemana(-1)">← Semana Anterior</button>
-                        <div class="info-semana" id="infoSemana">Semana de 29 Set a 05 Out 2025</div>
+                        <div class="info-semana" id="infoSemana">Carregando...</div>
                         <button class="btn-semana" onclick="mudarSemana(1)">Próxima Semana →</button>
+                        <button class="btn-semana btn-hoje" onclick="irParaSemanaAtual()" title="Ir para a semana de hoje">📅 Hoje</button>
                     </div>
                     
                     <h2>📅 Grade Semanal de Aulas</h2>
@@ -874,15 +903,30 @@
                             <option value="6">Julho</option>
                             <option value="7">Agosto</option>
                             <option value="8">Setembro</option>
-                            <option value="9" selected>Outubro</option>
+                            <option value="9">Outubro</option>
                             <option value="10">Novembro</option>
                             <option value="11">Dezembro</option>
                         </select>
                         <select id="selectAno" onchange="atualizarResumoMensal()">
                             <option value="2024">2024</option>
-                            <option value="2025" selected>2025</option>
+                            <option value="2025">2025</option>
                             <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                            <option value="2031">2031</option>
+                            <option value="2032">2032</option>
+                            <option value="2033">2033</option>
+                            <option value="2034">2034</option>
+                            <option value="2035">2035</option>
+                            <option value="2036">2036</option>
+                            <option value="2037">2037</option>
+                            <option value="2038">2038</option>
+                            <option value="2039">2039</option>
+                            <option value="2040">2040</option>
                         </select>
+                        <button type="button" class="btn-mes-atual" onclick="irParaMesAtual()" title="Ir para o mês atual do sistema">📅 Mês Atual</button>
                     </div>
                     <div id="resumoMensal">
                         <!-- Resumo será gerado via JavaScript -->
@@ -1943,6 +1987,47 @@
             renderizarGradeHorarios();
         }
 
+        function irParaSemanaAtual() {
+            semanaAtual = 0;
+            renderizarGradeHorarios();
+        }
+
+        // Inicializar os seletores do relatório mensal com o mês e ano do sistema e gerar anos estendidos
+        function inicializarFiltrosRelatorio() {
+            const hoje = new Date();
+            const anoAtual = hoje.getFullYear();
+            const mesAtual = hoje.getMonth();
+            
+            const selectAno = document.getElementById('selectAno');
+            const selectMes = document.getElementById('selectMes');
+            
+            if (selectAno) {
+                const anoInicial = 2024;
+                const anoFinal = Math.max(anoAtual + 10, 2040);
+                
+                selectAno.innerHTML = '';
+                for (let a = anoInicial; a <= anoFinal; a++) {
+                    const opt = document.createElement('option');
+                    opt.value = a;
+                    opt.textContent = a;
+                    if (a === anoAtual) {
+                        opt.selected = true;
+                    }
+                    selectAno.appendChild(opt);
+                }
+                selectAno.value = anoAtual;
+            }
+            
+            if (selectMes) {
+                selectMes.value = mesAtual;
+            }
+        }
+
+        function irParaMesAtual() {
+            inicializarFiltrosRelatorio();
+            atualizarResumoMensal();
+        }
+
         function editarHorario(index) {
             const horaSlot = document.querySelectorAll('.hora-slot')[index];
             const display = horaSlot.querySelector('.hora-display');
@@ -2142,6 +2227,7 @@
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             carregarDados();
+            inicializarFiltrosRelatorio();
             renderizarProfessores();
             renderizarAulas();
             renderizarGradeHorarios();
