@@ -597,7 +597,6 @@
 
         .btn-remover-aula, .btn-remover-professor {
             position: absolute;
-            background: rgba(239, 68, 68, 0.85);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -609,21 +608,29 @@
             font-weight: bold;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
             transition: all 0.2s;
+            z-index: 10;
         }
 
-        .btn-remover-aula:hover, .btn-remover-professor:hover {
+        /* Botão remover AULA — vermelho, canto superior direito */
+        .btn-remover-aula {
+            background: rgba(239, 68, 68, 0.9);
+            top: 5px;
+            right: 5px;
+        }
+        .btn-remover-aula:hover {
             background: #dc2626;
             transform: scale(1.15);
         }
 
-        .btn-remover-aula {
-            top: 5px;
-            right: 5px;
-        }
-
+        /* Botão remover PROFESSOR — roxo, segundo a partir da direita */
         .btn-remover-professor {
+            background: rgba(139, 92, 246, 0.9);
             top: 5px;
             right: 30px;
+        }
+        .btn-remover-professor:hover {
+            background: #7c3aed;
+            transform: scale(1.15);
         }
 
         .aula-slot:hover .btn-remover-aula,
@@ -2179,17 +2186,41 @@
 
         // Obtém dados de um slot: prioriza dados específicos da data; fallback para fixo
         // Retorna { dados, fonte } onde fonte é 'especifico' | 'fixo' | 'vazio'
+        // Helper: lê dados do template fixo a partir de uma chave específica por data
+        // chaveEspecifica formato: YYYY-MM-DD-HH:MM
+        function obterDadosFixoParaChaveEspecifica(chaveEspecifica) {
+            const parts = chaveEspecifica.split('-');
+            if (parts.length < 4) return {};
+            try {
+                const year = parseInt(parts[0]);
+                const month = parseInt(parts[1]) - 1;
+                const day = parseInt(parts[2]);
+                const hora = parts[3]; // HH:MM
+                const data = new Date(year, month, day);
+                const diaSemana = ((data.getDay() + 6) % 7);
+                return obterHorarioFixo(diaSemana, hora);
+            } catch(e) { return {}; }
+        }
+
         function obterDadosSlot(dia, hora) {
             const chaveEspecifica = criarChaveHorario(dia, hora);
-            let dadosEspecificos = {};
-            try { dadosEspecificos = JSON.parse(localStorage.getItem(chaveEspecifica) || '{}'); } catch(e) {}
+            // Verificar se existe uma chave específica para esta data
+            // (mesmo que vazia, é um override explícito do template fixo)
+            const rawEspecifico = localStorage.getItem(chaveEspecifica);
 
-            if (dadosEspecificos.aulaId || dadosEspecificos.professorId) {
-                return { dados: dadosEspecificos, fonte: 'especifico', chave: chaveEspecifica };
+            if (rawEspecifico !== null) {
+                let dadosEspecificos = {};
+                try { dadosEspecificos = JSON.parse(rawEspecifico); } catch(e) {}
+                const temDados = dadosEspecificos.aulaId || dadosEspecificos.professorId;
+                return {
+                    dados: dadosEspecificos,
+                    fonte: temDados ? 'especifico' : 'vazio',
+                    chave: chaveEspecifica
+                };
             }
 
-            // Dia da semana: 0=Segunda ... 6=Domingo (conforme diasSemana array)
-            const diaSemana = ((dia.getDay() + 6) % 7); // converte domingo=0 do JS para 6
+            // Sem chave específica — fallback para template fixo
+            const diaSemana = ((dia.getDay() + 6) % 7);
             const dadosFixos = obterHorarioFixo(diaSemana, hora);
 
             if (dadosFixos.aulaId || dadosFixos.professorId) {
@@ -2389,11 +2420,11 @@
                     // Em modo fixo, os botões de remover operam na chave fixa
                     let botoesRemocao = '';
                     if (modoFixoAtivo) {
-                        if (aula) botoesRemocao += `<button class="btn-remover-aula" onclick="removerAulaDoHorarioFixo('${chaveFixo}')">×</button>`;
-                        if (professor) botoesRemocao += `<button class="btn-remover-professor" onclick="removerProfessorDoHorarioFixo('${chaveFixo}')">×</button>`;
+                        if (aula) botoesRemocao += `<button class="btn-remover-aula" title="Remover aula do horário fixo" onclick="event.stopPropagation(); removerAulaDoHorarioFixo('${chaveFixo}')">×</button>`;
+                        if (professor) botoesRemocao += `<button class="btn-remover-professor" title="Remover professor do horário fixo" onclick="event.stopPropagation(); removerProfessorDoHorarioFixo('${chaveFixo}')">×</button>`;
                     } else {
-                        if (aula) botoesRemocao += `<button class="btn-remover-aula" onclick="removerAulaDoHorario('${chaveParaEdicao}')">×</button>`;
-                        if (professor) botoesRemocao += `<button class="btn-remover-professor" onclick="removerProfessorDoHorario('${chaveParaEdicao}')">×</button>`;
+                        if (aula) botoesRemocao += `<button class="btn-remover-aula" title="Remover aula deste horário" onclick="event.stopPropagation(); removerAulaDoHorario('${chaveParaEdicao}')">×</button>`;
+                        if (professor) botoesRemocao += `<button class="btn-remover-professor" title="Remover professor deste horário" onclick="event.stopPropagation(); removerProfessorDoHorario('${chaveParaEdicao}')">×</button>`;
                     }
                     
                     let botoesAdicao = '';
@@ -2456,6 +2487,14 @@
             if (!horarioSelecionado) return;
             
             const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
+
+            // Preservar professorId do template fixo caso não esteja já na chave específica
+            if (!dadosAtuais.professorId) {
+                const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
+                if (dadosFixo.professorId) {
+                    dadosAtuais.professorId = dadosFixo.professorId;
+                }
+            }
             
             if (opcaoAtual === 'aula-existente' || opcaoAtual?.tipo === 'aula-existente') {
                 if (opcaoAtual.aulaId) {
@@ -2500,6 +2539,15 @@
             }
             
             const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
+
+            // Preservar aulaId do template fixo caso não esteja já na chave específica
+            if (!dadosAtuais.aulaId) {
+                const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
+                if (dadosFixo.aulaId) {
+                    dadosAtuais.aulaId = dadosFixo.aulaId;
+                }
+            }
+
             dadosAtuais.professorId = professorSelecionado;
             localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
             
@@ -2971,10 +3019,24 @@
         // Funções de remoção individuais (ATUALIZADAS)
         function removerAulaDoHorario(chaveHorario) {
             if (confirm('Remover aula deste horário?')) {
-                const dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+                let dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+
+                // Se não há dados específicos, pode ser um slot do template fixo.
+                // Preservar o professorId do fixo para não o perder.
+                if (!dados.aulaId && !dados.professorId) {
+                    const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
+                    if (dadosFixo.professorId) {
+                        dados.professorId = dadosFixo.professorId;
+                    }
+                }
+
                 delete dados.aulaId;
+
+                // Guardar sempre (mesmo que vazio) para criar um override explícito
+                // que impede o fallback para o template fixo nesta data
                 if (Object.keys(dados).length === 0) {
-                    localStorage.removeItem(chaveHorario);
+                    // Escrever objeto vazio como override do template fixo
+                    localStorage.setItem(chaveHorario, JSON.stringify({}));
                 } else {
                     localStorage.setItem(chaveHorario, JSON.stringify(dados));
                 }
@@ -2984,10 +3046,22 @@
 
         function removerProfessorDoHorario(chaveHorario) {
             if (confirm('Remover professor deste horário?')) {
-                const dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+                let dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+
+                // Se não há dados específicos, pode ser um slot do template fixo.
+                // Preservar o aulaId do fixo para não o perder.
+                if (!dados.aulaId && !dados.professorId) {
+                    const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
+                    if (dadosFixo.aulaId) {
+                        dados.aulaId = dadosFixo.aulaId;
+                    }
+                }
+
                 delete dados.professorId;
+
+                // Guardar sempre para criar um override explícito do template fixo
                 if (Object.keys(dados).length === 0) {
-                    localStorage.removeItem(chaveHorario);
+                    localStorage.setItem(chaveHorario, JSON.stringify({}));
                 } else {
                     localStorage.setItem(chaveHorario, JSON.stringify(dados));
                 }

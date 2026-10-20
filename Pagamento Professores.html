@@ -585,7 +585,6 @@
 
         .btn-remover-aula, .btn-remover-professor {
             position: absolute;
-            background: rgba(239, 68, 68, 0.85);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -597,21 +596,29 @@
             font-weight: bold;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
             transition: all 0.2s;
+            z-index: 10;
         }
 
-        .btn-remover-aula:hover, .btn-remover-professor:hover {
+        /* Botão remover AULA — vermelho, canto superior direito */
+        .btn-remover-aula {
+            background: rgba(239, 68, 68, 0.9);
+            top: 5px;
+            right: 5px;
+        }
+        .btn-remover-aula:hover {
             background: #dc2626;
             transform: scale(1.15);
         }
 
-        .btn-remover-aula {
-            top: 5px;
-            right: 5px;
-        }
-
+        /* Botão remover PROFESSOR — roxo, segundo a partir da direita */
         .btn-remover-professor {
+            background: rgba(139, 92, 246, 0.9);
             top: 5px;
             right: 30px;
+        }
+        .btn-remover-professor:hover {
+            background: #7c3aed;
+            transform: scale(1.15);
         }
 
         .aula-slot:hover .btn-remover-aula,
@@ -1866,10 +1873,10 @@
                     
                     let botoesRemocao = '';
                     if (aula) {
-                        botoesRemocao += `<button class="btn-remover-aula" onclick="removerAulaDoHorario('${chaveHorario}')">×</button>`;
+                        botoesRemocao += `<button class="btn-remover-aula" title="Remover aula deste horário" onclick="event.stopPropagation(); removerAulaDoHorario('${chaveHorario}')">×</button>`;
                     }
                     if (professor) {
-                        botoesRemocao += `<button class="btn-remover-professor" onclick="removerProfessorDoHorario('${chaveHorario}')">×</button>`;
+                        botoesRemocao += `<button class="btn-remover-professor" title="Remover professor deste horário" onclick="event.stopPropagation(); removerProfessorDoHorario('${chaveHorario}')">×</button>`;
                     }
                     
                     let botoesAdicao = '';
