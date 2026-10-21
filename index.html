@@ -1253,7 +1253,9 @@
                         <span>🔁 Modo de Edição: Horário Fixo Semanal — As aulas que adicionar aqui irão repetir-se em todas as semanas.</span>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button class="btn-fixo-acao btn-fixo-copiar" onclick="copiarSemanaParaFixo()">📋 Copiar Semana Atual → Fixo</button>
-                            <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()">🗑️ Limpar Horário Fixo</button>
+                            <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparAulasFixas()" style="background: linear-gradient(135deg, #dc2626, #ef4444);">🧹 Limpar Aulas Fixas</button>
+                            <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparProfessoresFixos()" style="background: linear-gradient(135deg, #dc2626, #ef4444);">�‍🏫 Limpar Profs Fixos</button>
+                            <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()">🗑️ Limpar Tudo (Fixo)</button>
                         </div>
                     </div>
 
@@ -2274,6 +2276,60 @@
             renderizarGradeHorarios();
         }
 
+        // Limpa apenas as aulas do template fixo (mantém professores)
+        function limparAulasFixas() {
+            if (!confirm('Tem a certeza que quer apagar todas as aulas do horário fixo semanal? Os professores permanecerão.')) return;
+            
+            let removidas = 0;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) {
+                    try {
+                        const dados = JSON.parse(localStorage.getItem(k) || '{}');
+                        if (dados.aulaId) {
+                            delete dados.aulaId;
+                            removidas++;
+                            if (Object.keys(dados).length === 0) {
+                                localStorage.removeItem(k);
+                            } else {
+                                localStorage.setItem(k, JSON.stringify(dados));
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+            
+            renderizarGradeHorarios();
+            alert(`Removidas ${removidas} aulas do horário fixo.`);
+        }
+
+        // Limpa apenas os professores do template fixo (mantém aulas)
+        function limparProfessoresFixos() {
+            if (!confirm('Tem a certeza que quer apagar todos os professores do horário fixo semanal? As aulas permanecerão.')) return;
+            
+            let removidos = 0;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) {
+                    try {
+                        const dados = JSON.parse(localStorage.getItem(k) || '{}');
+                        if (dados.professorId) {
+                            delete dados.professorId;
+                            removidos++;
+                            if (Object.keys(dados).length === 0) {
+                                localStorage.removeItem(k);
+                            } else {
+                                localStorage.setItem(k, JSON.stringify(dados));
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+            
+            renderizarGradeHorarios();
+            alert(`Removidos ${removidos} professores do horário fixo.`);
+        }
+
         // Limpa todo o template fixo
         function limparHorarioFixo() {
             if (!confirm('Tem a certeza que quer apagar o horário fixo semanal? Esta ação é irreversível.')) return;
@@ -3156,19 +3212,30 @@
         function testarModoFixo() {
             console.log('=== TESTE DO MODO FIXO ===');
             console.log('modoFixoAtivo:', modoFixoAtivo);
-            console.log('horarios fixos no localStorage:');
             
+            let totalAulas = 0;
+            let totalProfessores = 0;
             const chavesFixas = [];
+            
             for (let i = 0; i < localStorage.length; i++) {
                 const chave = localStorage.key(i);
                 if (chave && chave.startsWith('fixed-')) {
                     chavesFixas.push(chave);
-                    console.log('-', chave, ':', localStorage.getItem(chave));
+                    try {
+                        const dados = JSON.parse(localStorage.getItem(chave) || '{}');
+                        console.log('-', chave, ':', dados);
+                        if (dados.aulaId) totalAulas++;
+                        if (dados.professorId) totalProfessores++;
+                    } catch(e) {
+                        console.log('-', chave, ': ERRO ao analisar JSON');
+                    }
                 }
             }
             
             if (chavesFixas.length === 0) {
                 console.log('Nenhum horário fixo encontrado');
+            } else {
+                console.log(`Estatísticas: ${chavesFixas.length} slots fixos, ${totalAulas} com aulas, ${totalProfessores} com professores`);
             }
             
             console.log('=== FIM DO TESTE ===');
