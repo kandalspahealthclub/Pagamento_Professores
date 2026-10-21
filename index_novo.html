@@ -1,0 +1,3427 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090d16">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>ðŸ‹ï¸ GestÃ£o de GinÃ¡sio - Aulas e HorÃ¡rios</title>
+    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --bg-body: #090d16;
+            --bg-gradient: radial-gradient(circle at 15% 10%, #1e1b4b 0%, #0c1120 45%, #07090e 100%);
+            --card-bg: rgba(17, 24, 39, 0.78);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-border-glow: rgba(99, 102, 241, 0.35);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-primary: #6366f1;
+            --accent-primary-hover: #4f46e5;
+            --accent-emerald: #10b981;
+            --accent-emerald-glow: rgba(16, 185, 129, 0.35);
+            --accent-rose: #f43f5e;
+            --accent-amber: #f59e0b;
+            --slot-empty-bg: rgba(15, 23, 42, 0.45);
+            --slot-empty-border: rgba(255, 255, 255, 0.08);
+            --input-bg: #0c111d;
+            --input-border: rgba(255, 255, 255, 0.12);
+            --shadow-card: 0 16px 36px -8px rgba(0, 0, 0, 0.6), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 15, 26, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.14);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            padding: 24px;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1650px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 2.5rem;
+            letter-spacing: -0.5px;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff 20%, #c7d2fe 60%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 4px 14px rgba(99, 102, 241, 0.25));
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 310px 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .section {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            padding: 22px;
+            border-radius: 18px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 20px;
+        }
+
+        .sidebar .section:last-child {
+            margin-bottom: 0;
+        }
+
+        h2 {
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.35);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.25rem;
+            letter-spacing: -0.2px;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-add:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+        }
+
+        /* Listas no painel lateral */
+        .lista-container {
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .lista-item {
+            background: rgba(22, 30, 49, 0.75);
+            border: 1px solid var(--card-border);
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border-left: 4px solid #6366f1;
+            transition: all 0.25s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lista-item:hover {
+            transform: translateX(4px);
+            background: rgba(30, 41, 65, 0.85);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .cor-aula {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+        }
+
+        .aula-nome {
+            font-weight: 700;
+            color: #f8fafc;
+            font-size: 13px;
+            min-width: 70px;
+        }
+
+        .aula-preco {
+            color: #34d399;
+            font-weight: 700;
+            font-size: 13px;
+            margin-right: 8px;
+        }
+
+        .professor-nome {
+            font-weight: 700;
+            color: #f8fafc;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .professor-total {
+            color: #fb7185;
+            font-weight: 700;
+            font-size: 13px;
+            margin-right: 8px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 4px 7px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .btn-edit {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-edit:hover {
+            background: #f59e0b;
+            color: #0b0f19;
+            transform: translateY(-1px);
+        }
+
+        .btn-delete {
+            background: rgba(244, 63, 94, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(244, 63, 94, 0.35);
+        }
+
+        .btn-delete:hover {
+            background: #ef4444;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Grade de HorÃ¡rios */
+        .grade-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 24px;
+        }
+
+        .grade-header {
+            display: grid;
+            grid-template-columns: 180px repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .grade-header > div:first-child {
+            background: rgba(22, 30, 49, 0.85);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #94a3b8;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        .grade-body {
+            display: grid;
+            grid-template-columns: 180px repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .hora-slot {
+            padding: 16px 12px;
+            text-align: center;
+            background: rgba(22, 30, 49, 0.7);
+            border: 1px solid var(--card-border);
+            font-weight: 700;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 19px;
+            font-family: 'Outfit', sans-serif;
+            color: #cbd5e1;
+            min-height: 80px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .hora-slot:hover {
+            background: rgba(26, 36, 58, 0.9);
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+
+        .hora-display {
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            min-width: 75px;
+            color: #f1f5f9;
+        }
+
+        .hora-display:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .hora-editavel {
+            background: var(--input-bg);
+            border: 2px solid #6366f1;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            width: 90px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            display: none;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .btn-hora {
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-hora:hover {
+            background: #4f46e5;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-remover-hora {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 7px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-remover-hora:hover {
+            background: #ef4444;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .btn-adicionar-linha {
+            position: absolute;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+            transition: all 0.2s;
+        }
+
+        .btn-adicionar-linha:hover {
+            transform: translateX(-50%) scale(1.15);
+            background: #059669;
+        }
+
+        .btn-adicionar-acima {
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .btn-adicionar-abaixo {
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .hora-slot:hover .btn-adicionar-linha {
+            display: block;
+        }
+
+        .dia-slot {
+            padding: 12px 8px;
+            text-align: center;
+            background: linear-gradient(180deg, #1e293b 0%, #131c2d 100%);
+            border: 1px solid var(--card-border);
+            color: white;
+            font-weight: bold;
+            border-radius: 12px;
+            font-size: 16px;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .dia-nome {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #e2e8f0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .dia-data {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .dia-hoje {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+            border: 1px solid rgba(52, 211, 153, 0.5) !important;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4) !important;
+            position: relative;
+        }
+
+        .dia-hoje .dia-nome {
+            color: #ffffff !important;
+        }
+
+        .dia-hoje .dia-data {
+            color: #d1fae5 !important;
+            font-weight: 600;
+        }
+
+        .dia-hoje::after {
+            content: "â—";
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 12px;
+            color: #fef08a;
+            text-shadow: 0 0 8px #facc15;
+        }
+
+        .aula-slot {
+            min-height: 80px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            color: white;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .aula-slot:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            filter: brightness(1.08);
+            z-index: 5;
+        }
+
+        .aula-slot.vazia {
+            background: var(--slot-empty-bg) !important;
+            color: var(--text-muted);
+            border: 2px dashed var(--slot-empty-border) !important;
+            box-shadow: none !important;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .aula-slot.vazia:hover {
+            background: rgba(99, 102, 241, 0.08) !important;
+            border-color: rgba(99, 102, 241, 0.35) !important;
+            transform: scale(1.01);
+            filter: none;
+        }
+
+        .btn-add-horario {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 2px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-add-professor {
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            margin: 2px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-add-horario:hover {
+            background: #10b981;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-add-professor:hover {
+            background: #6366f1;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .aula-nome-grade {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            margin-bottom: 4px;
+            font-size: 14px;
+            letter-spacing: -0.2px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+
+        .aula-professor-grade {
+            font-size: 12px;
+            font-weight: 500;
+            opacity: 0.95;
+            margin-bottom: 3px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .aula-preco-grade {
+            font-size: 12px;
+            margin-top: 3px;
+            font-weight: 800;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        }
+
+        .btn-remover-aula, .btn-remover-professor {
+            position: absolute;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        /* BotÃ£o remover AULA â€” vermelho, canto superior direito */
+        .btn-remover-aula {
+            background: rgba(239, 68, 68, 0.9);
+            top: 5px;
+            right: 5px;
+        }
+        .btn-remover-aula:hover {
+            background: #dc2626;
+            transform: scale(1.15);
+        }
+
+        /* BotÃ£o remover PROFESSOR â€” roxo, segundo a partir da direita */
+        .btn-remover-professor {
+            background: rgba(139, 92, 246, 0.9);
+            top: 5px;
+            right: 30px;
+        }
+        .btn-remover-professor:hover {
+            background: #7c3aed;
+            transform: scale(1.15);
+        }
+
+        .aula-slot:hover .btn-remover-aula,
+        .aula-slot:hover .btn-remover-professor {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .botoes-adicionar {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 6px;
+        }
+
+        /* Modais */
+        .modal, .modal-rapido, .modal-professor-rapido {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(4, 7, 15, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content, .modal-rapido-content, .modal-professor-rapido-content {
+            background: #111827;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 26px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 440px;
+            max-height: 90vh;
+            overflow-y: auto;
+            color: #f8fafc;
+            box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .modal-rapido-content {
+            max-width: 480px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: #f8fafc;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.12);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+        }
+
+        /* OpÃ§Ãµes no Modal RÃ¡pido */
+        .opcoes-rapidas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .opcao-rapida {
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            background: #0b0f19;
+        }
+
+        .opcao-rapida:hover {
+            transform: translateY(-3px);
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.12);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .opcao-rapida div:first-child {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .opcao-titulo {
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .opcao-descricao {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .form-aula-direta {
+            margin-top: 15px;
+        }
+
+        .cor-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .cor-option {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .cor-option.selected {
+            border-color: #ffffff;
+            transform: scale(1.15);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+
+        .professores-rapidos {
+            max-height: 220px;
+            overflow-y: auto;
+            margin: 14px 0;
+            padding-right: 4px;
+        }
+
+        .professor-rapido {
+            padding: 12px 14px;
+            background: #0b0f19;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+            text-align: left;
+            font-size: 14px;
+            color: #f8fafc;
+        }
+
+        .professor-rapido:hover {
+            transform: translateX(4px);
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.12);
+        }
+
+        .professor-rapido.selecionado {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+        }
+
+        .aula-rapida {
+            background: #0b0f19;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 4px solid #6366f1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #f8fafc;
+        }
+
+        .aula-rapida:hover {
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.12);
+            transform: translateX(3px);
+        }
+
+        /* NavegaÃ§Ã£o da Semana */
+        .navegacao-semana {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px 18px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-semana {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-semana:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-semana.btn-hoje {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-semana.btn-hoje:hover {
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .info-semana {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 16px;
+            letter-spacing: 0.2px;
+        }
+
+        /* RelatÃ³rio Mensal */
+        .relatorio-mensal {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .relatorio-mensal h2 {
+            border-bottom: 2px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-pdf {
+            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(225, 29, 72, 0.35);
+            transition: all 0.2s;
+        }
+
+        .btn-pdf:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(225, 29, 72, 0.5);
+        }
+
+        .selecao-mes {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+
+        .selecao-mes label {
+            font-weight: 700;
+            color: #cbd5e1;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        .selecao-mes select {
+            width: auto;
+            min-width: 130px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            background: #0f1524;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f8fafc;
+        }
+
+        .btn-mes-atual {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-mes-atual:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .info-calculo {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 12px 0 16px 0;
+            text-align: center;
+        }
+
+        .resumo-professor {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(22, 30, 49, 0.75);
+            border: 1px solid var(--card-border);
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border-left: 4px solid #6366f1;
+            transition: all 0.25s ease;
+        }
+
+        .resumo-professor:hover {
+            transform: translateX(5px);
+            background: rgba(30, 41, 65, 0.9);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        .resumo-nome {
+            font-weight: 700;
+            color: #f8fafc;
+            font-size: 14px;
+        }
+
+        .resumo-total {
+            color: #34d399;
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .resumo-vazio {
+            text-align: center;
+            color: #94a3b8;
+            padding: 24px;
+            background: rgba(15, 23, 42, 0.45);
+            border: 1px dashed var(--slot-empty-border);
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .resumo-professor.detalhe {
+            background: rgba(15, 23, 42, 0.5);
+            border-left-color: rgba(99, 102, 241, 0.6);
+            margin-top: 4px;
+            font-size: 13px;
+            padding: 8px 18px;
+        }
+
+        .resumo-detalhe {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .total-geral {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-left: 5px solid #10b981;
+            margin-top: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.18);
+        }
+
+        .total-geral .resumo-nome {
+            color: #34d399;
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .total-geral .resumo-total {
+            color: #34d399;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* HorÃ¡rio Fixo */
+        .modo-fixo-ativo .grade-container {
+            outline: 3px solid #8b5cf6;
+            outline-offset: -3px;
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.35);
+        }
+
+        .badge-fixo {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 11px;
+            opacity: 0.9;
+            background: rgba(139, 92, 246, 0.9);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .btn-modo-fixo {
+            background: linear-gradient(135deg, #7c3aed, #6366f1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+        }
+
+        .btn-modo-fixo.ativo {
+            background: linear-gradient(135deg, #059669, #10b981);
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 24px rgba(16, 185, 129, 0.8); }
+        }
+
+        .barra-modo-fixo {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(99, 102, 241, 0.15));
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .barra-modo-fixo.visivel { display: flex; }
+
+        .barra-modo-fixo span {
+            font-weight: 600;
+            color: #c084fc;
+            font-size: 13px;
+        }
+
+        .btn-fixo-acao {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-fixo-copiar {
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+        .btn-fixo-copiar:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-fixo-limpar {
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            color: white;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+        }
+        .btn-fixo-limpar:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }
+
+        /* Aula Fixa - Estilo Destaque */
+        .aula-slot.fixo {
+            position: relative;
+            border: 2px solid #8b5cf6 !important;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
+        }
+
+        .aula-slot.fixo::before {
+            content: "ðŸ”";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 12px;
+            background: rgba(139, 92, 246, 0.9);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .aula-slot.fixo::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1));
+            border-radius: 10px;
+            z-index: 1;
+        }
+
+        /* Modo fixo ativo - slots vazios tÃªm cor diferente */
+        .modo-fixo-ativo .aula-slot.vazia {
+            background: rgba(139, 92, 246, 0.08) !important;
+            border: 2px dashed rgba(139, 92, 246, 0.4) !important;
+        }
+
+        .modo-fixo-ativo .aula-slot.vazia:hover {
+            background: rgba(139, 92, 246, 0.15) !important;
+            border-color: rgba(139, 92, 246, 0.6) !important;
+        }
+
+        /* Indicador visual para slots que vÃªm do fixo mas nÃ£o estÃ£o em modo fixo */
+        .aula-slot:not(.fixo)[data-fixo="true"] {
+            border-left: 4px solid #8b5cf6 !important;
+        }
+
+        .aula-slot.fixo-override { outline: 2px solid #f59e0b; outline-offset: -2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ðŸ‹ï¸ GestÃ£o de GinÃ¡sio - Aulas e HorÃ¡rios</h1>
+        
+        <!-- Status Firebase e ConfiguraÃ§Ã£o -->
+        <div id="sync-container" style="text-align: center; margin-bottom: 25px;">
+            <span style="display: inline-flex; align-items: center; gap: 8px; background: rgba(17, 24, 39, 0.85); padding: 8px 18px; border-radius: 30px; backdrop-filter: blur(12px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #f8fafc;">
+                <span id="sync-dot" style="width: 10px; height: 10px; border-radius: 50%; background-color: #ffc107; display: inline-block; box-shadow: 0 0 8px #ffc107; transition: all 0.3s ease;"></span>
+                <span id="sync-text" style="font-size: 13px; font-weight: 600;">Firebase: NÃ£o configurado</span>
+                <button onclick="abrirModalFirebaseConfig()" style="background: none; border: none; color: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 2px; margin-left: 6px; opacity: 0.8; transition: opacity 0.2s; font-size: 14px;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8" title="Configurar Firebase">
+                    âš™ï¸
+                </button>
+            </span>
+        </div>
+        
+        <div class="dashboard">
+            <!-- Painel Lateral -->
+            <div class="sidebar">
+                <!-- Lista de Professores -->
+                <div class="section">
+                    <h2>
+                        ðŸ‘¨â€ðŸ« Professores
+                        <button class="btn-add" onclick="abrirModalProfessor()">+ Novo</button>
+                    </h2>
+                    <div class="lista-container" id="listaProfessores">
+                        <!-- Professores serÃ£o carregados aqui -->
+                    </div>
+                </div>
+
+                <!-- Lista de Aulas -->
+                <div class="section">
+                    <h2>
+                        ðŸ’ª Aulas
+                        <button class="btn-add" onclick="abrirModalAula()">+ Nova</button>
+                    </h2>
+                    <div class="lista-container" id="listaAulas">
+                        <!-- Aulas serÃ£o carregadas aqui -->
+                    </div>
+                </div>
+
+                <!-- HorÃ¡rio Fixo (visÃ­vel apenas quando ativo) -->
+                <div class="section" id="secaoHorarioFixo" style="display: none;">
+                    <h2>
+                        ðŸ” HorÃ¡rio Fixo
+                        <button class="btn-add" onclick="copiarSemanaParaFixo()" style="background: linear-gradient(135deg, #7c3aed, #6366f1);">ðŸ“‹ Copiar Semana</button>
+                    </h2>
+                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
+                        As aulas aqui definidas repetem-se automaticamente em <strong>todas as semanas</strong>.
+                    </p>
+                    <div class="lista-container" id="listaHorarioFixo">
+                        <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 13px;">
+                            Nenhum horÃ¡rio fixo definido.<br>
+                            <span style="font-size: 11px;">Ative o modo fixo e adicione aulas Ã  grade.</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()" style="width: 100%; font-size: 11px; padding: 6px 12px;">ðŸ—‘ï¸ Limpar Todo o HorÃ¡rio Fixo</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ConteÃºdo Principal -->
+            <div class="main-content">
+                <!-- Grade de HorÃ¡rios -->
+                <div class="grade-container">
+                    <div class="navegacao-semana">
+                        <button class="btn-semana" onclick="mudarSemana(-1)">â† Semana Anterior</button>
+                        <div class="info-semana" id="infoSemana">Carregando...</div>
+                        <button class="btn-semana" onclick="mudarSemana(1)">PrÃ³xima Semana â†’</button>
+                        <button class="btn-semana btn-hoje" onclick="irParaSemanaAtual()" title="Ir para a semana de hoje">ðŸ“… Hoje</button>
+                        <button class="btn-modo-fixo" id="btnModoFixo" onclick="toggleModoFixo()" title="Ativar ediÃ§Ã£o de horÃ¡rio fixo semanal">ðŸ” HorÃ¡rio Fixo</button>
+                    </div>
+
+                    <!-- Barra de aÃ§Ãµes do modo fixo -->
+                    <div class="barra-modo-fixo" id="barraModoFixo">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-size: 20px;">ðŸ”</span>
+                                <div>
+                                    <div style="font-weight: 700; color: #8b5cf6; font-size: 14px;">Modo HorÃ¡rio Fixo Ativo</div>
+                                    <div style="font-size: 12px; color: #cbd5e1;">As aulas que adicionar aqui aparecerÃ£o automaticamente em <strong>todas as semanas</strong>.</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button class="btn-fixo-acao btn-fixo-copiar" onclick="copiarSemanaParaFixo()" title="Copiar horÃ¡rios da semana atual para o modelo fixo">ðŸ“‹ Copiar Semana</button>
+                                <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()" title="Limpar todo o horÃ¡rio fixo">ðŸ—‘ï¸ Limpar Fixo</button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139, 92, 246, 0.3); font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 14px; height: 14px; border-radius: 3px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border: 2px solid rgba(255,255,255,0.4);"></div>
+                                <span><strong>Aula Fixa</strong> â€“ Repete todas as semanas</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 14px; height: 14px; border-radius: 3px; background: currentColor; border: 1px solid rgba(255,255,255,0.3);"></div>
+                                <span>Aula Normal â€“ Apenas esta semana</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                                <span>ðŸ“ Veja todas as aulas fixas na</span>
+                                <button onclick="document.getElementById('secaoHorarioFixo').scrollIntoView({behavior: 'smooth'})" style="background: none; border: 1px solid rgba(139, 92, 246, 0.5); color: #a78bfa; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">seÃ§Ã£o lateral â†’</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>ðŸ“… Grade Semanal de Aulas</h2>
+                    <div class="grade-header" id="gradeHeader">
+                        <!-- CabeÃ§alho serÃ¡ gerado via JavaScript -->
+                    </div>
+                    <div class="grade-body" id="gradeHorarios">
+                        <!-- Grade serÃ¡ gerada via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- RelatÃ³rio Mensal -->
+                <div class="relatorio-mensal">
+                    <h2>
+                        ðŸ’° RelatÃ³rio Mensal
+                        <button class="btn-pdf" onclick="gerarPDF()">ðŸ“„ Gerar PDF</button>
+                        <button class="btn-pdf" onclick="testarModoFixo()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); margin-left: 8px;">ðŸ”§ Testar Fixo</button>
+                        <button class="btn-pdf" onclick="diagnosticarChavesFixas()" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); margin-left: 8px;">ðŸ” DiagnÃ³stico</button>
+                    </h2>
+                    <div class="selecao-mes">
+                        <label for="selectMes">MÃªs:</label>
+                        <select id="selectMes" onchange="atualizarResumoMensal()">
+                            <option value="0">Janeiro</option>
+                            <option value="1">Fevereiro</option>
+                            <option value="2">MarÃ§o</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Maio</option>
+                            <option value="5">Junho</option>
+                            <option value="6">Julho</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Setembro</option>
+                            <option value="9">Outubro</option>
+                            <option value="10">Novembro</option>
+                            <option value="11">Dezembro</option>
+                        </select>
+                        <select id="selectAno" onchange="atualizarResumoMensal()">
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                            <option value="2031">2031</option>
+                            <option value="2032">2032</option>
+                            <option value="2033">2033</option>
+                            <option value="2034">2034</option>
+                            <option value="2035">2035</option>
+                            <option value="2036">2036</option>
+                            <option value="2037">2037</option>
+                            <option value="2038">2038</option>
+                            <option value="2039">2039</option>
+                            <option value="2040">2040</option>
+                        </select>
+                        <button type="button" class="btn-mes-atual" onclick="irParaMesAtual()" title="Ir para o mÃªs atual do sistema">ðŸ“… MÃªs Atual</button>
+                    </div>
+                    <div id="resumoMensal">
+                        <!-- Resumo serÃ¡ gerado via JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Firebase Config -->
+    <div class="modal" id="modalFirebaseConfig">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>ðŸ”¥ ConfiguraÃ§Ã£o do Firebase</h2>
+            <p style="font-size: 13px; color: #94a3b8; margin-bottom: 15px;">Cole aqui o cÃ³digo de configuraÃ§Ã£o do seu projeto Firebase Web. Este cÃ³digo Ã© gerado na consola do Firebase ao criar/adicionar uma Web App.</p>
+            <form id="formFirebaseConfig" onsubmit="salvarFirebaseConfig(event)">
+                <div class="form-group">
+                    <label>Objeto JSON de ConfiguraÃ§Ã£o:</label>
+                    <textarea id="firebaseConfigText" style="width: 100%; height: 160px; font-family: monospace; font-size: 12px; padding: 10px; resize: vertical;" placeholder='const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+};' required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="fecharModalFirebaseConfig()">Cancelar</button>
+                    <button type="button" class="btn-delete" style="background-color: #dc3545; color: white;" onclick="limparFirebaseConfig()">Desligar Firebase</button>
+                    <button type="submit" class="btn-primary">Conectar e Sincronizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Professor -->
+
+    <div class="modal" id="modalProfessor">
+        <div class="modal-content">
+            <h2 id="tituloModalProfessor">Novo Professor</h2>
+            <form id="formProfessor">
+                <input type="hidden" id="professorId">
+                <div class="form-group">
+                    <label>Nome do Professor:</label>
+                    <input type="text" id="professorNome" required placeholder="Ex: Carlos Silva">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="fecharModalProfessor()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Aula (SEM PROFESSOR) -->
+    <div class="modal" id="modalAula">
+        <div class="modal-content">
+            <h2 id="tituloModalAula">Nova Aula</h2>
+            <form id="formAula">
+                <input type="hidden" id="aulaId">
+                <div class="form-group">
+                    <label>Nome da Aula:</label>
+                    <input type="text" id="aulaNome" required placeholder="Ex: MusculaÃ§Ã£o">
+                </div>
+                <div class="form-group">
+                    <label>PreÃ§o (â‚¬):</label>
+                    <input type="number" id="aulaPreco" step="0.01" min="0" required placeholder="Ex: 25.00">
+                </div>
+                <div class="form-group">
+                    <label>Cor da Aula:</label>
+                    <input type="color" id="aulaCor" value="#007bff">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="fecharModalAula()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Aula</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Aula RÃ¡pida no HorÃ¡rio -->
+    <div class="modal-rapido" id="modalRapido">
+        <div class="modal-rapido-content">
+            <h3>ðŸ“… Adicionar Aula ao HorÃ¡rio</h3>
+            <p style="font-size: 13px; margin: 8px 0;"><strong id="infoHorario">{{DIA}}</strong> Ã s <strong id="infoHora">{{HORA}}</strong></p>
+            
+            <div class="opcoes-rapidas">
+                <div class="opcao-rapida" onclick="abrirOpcao('aula-existente')">
+                    <div>ðŸ’ª</div>
+                    <div class="opcao-titulo">Aula Existente</div>
+                    <div class="opcao-descricao">Usar uma aula jÃ¡ criada</div>
+                </div>
+                
+                <div class="opcao-rapida" onclick="abrirOpcao('aula-rapida')">
+                    <div>âš¡</div>
+                    <div class="opcao-titulo">Aula RÃ¡pida</div>
+                    <div class="opcao-descricao">Criar aula direta no horÃ¡rio</div>
+                </div>
+            </div>
+
+            <!-- OpÃ§Ã£o: Aula Existente -->
+            <div id="opcao-aula-existente" style="display: none;">
+                <h4>Selecionar Aula Existente</h4>
+                <div class="aulas-rapidas" id="aulasRapidas" style="max-height: 180px; overflow-y: auto;">
+                    <!-- Aulas existentes serÃ£o carregadas aqui -->
+                </div>
+            </div>
+
+            <!-- OpÃ§Ã£o: Aula RÃ¡pida -->
+            <div id="opcao-aula-rapida" style="display: none;">
+                <h4>Criar Aula RÃ¡pida</h4>
+                <form id="formAulaRapida" class="form-aula-direta">
+                    <div class="form-group">
+                        <label>Nome da Aula:</label>
+                        <input type="text" id="aulaRapidaNome" required placeholder="Ex: MusculaÃ§Ã£o AvanÃ§ada">
+                    </div>
+                    <div class="form-group">
+                        <label>PreÃ§o (â‚¬):</label>
+                        <input type="number" id="aulaRapidaPreco" step="0.01" min="0" required placeholder="Ex: 25.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Cor da Aula:</label>
+                        <div class="cor-options">
+                            <div class="cor-option selected" style="background: #ff6b6b;" onclick="selecionarCor('#ff6b6b')"></div>
+                            <div class="cor-option" style="background: #4ecdc4;" onclick="selecionarCor('#4ecdc4')"></div>
+                            <div class="cor-option" style="background: #45b7d1;" onclick="selecionarCor('#45b7d1')"></div>
+                            <div class="cor-option" style="background: #96ceb4;" onclick="selecionarCor('#96ceb4')"></div>
+                            <div class="cor-option" style="background: #feca57;" onclick="selecionarCor('#feca57')"></div>
+                            <input type="color" id="aulaRapidaCor" value="#ff6b6b" style="display: none;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="fecharModalRapido()">Cancelar</button>
+                <button class="btn-primary" id="btnConfirmarAula" onclick="confirmarAula()" style="display: none;">Adicionar Aula</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Professor RÃ¡pido -->
+    <div class="modal-professor-rapido" id="modalProfessorRapido">
+        <div class="modal-professor-rapido-content">
+            <h3>ðŸ‘¨â€ðŸ« Adicionar Professor ao HorÃ¡rio</h3>
+            <p style="font-size: 13px; margin: 8px 0;"><strong id="infoHorarioProfessor">{{DIA}}</strong> Ã s <strong id="infoHoraProfessor">{{HORA}}</strong></p>
+            
+            <div class="professores-rapidos" id="professoresRapidos">
+                <!-- Professores serÃ£o carregados aqui -->
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="fecharModalProfessorRapido()">Cancelar</button>
+                <button class="btn-primary" onclick="confirmarProfessor()">Adicionar Professor</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURAÃ‡ÃƒO E SINCRONIZAÃ‡ÃƒO FIREBASE ---
+        let isSyncingFromFirebase = false;
+        let firebaseDb = null;
+        let originalSetItem = localStorage.setItem;
+        let originalRemoveItem = localStorage.removeItem;
+        let firebasePushTimeout = null;
+
+        // Sobrescrever localStorage.setItem para capturar alteraÃ§Ãµes e enviar ao Firestore
+        localStorage.setItem = function(key, value) {
+            originalSetItem.apply(this, arguments);
+            if (!isSyncingFromFirebase && firebaseDb && key !== 'ginasio_firebase_config') {
+                agendarEnvioParaFirebase();
+            }
+        };
+
+        // Sobrescrever localStorage.removeItem
+        localStorage.removeItem = function(key) {
+            originalRemoveItem.apply(this, arguments);
+            if (!isSyncingFromFirebase && firebaseDb && key !== 'ginasio_firebase_config') {
+                agendarEnvioParaFirebase();
+            }
+        };
+
+        function agendarEnvioParaFirebase() {
+            if (firebasePushTimeout) clearTimeout(firebasePushTimeout);
+            atualizarBadgeStatus('syncing');
+            firebasePushTimeout = setTimeout(() => {
+                enviarEstadoParaFirebase();
+            }, 1000);
+        }
+
+        function enviarEstadoParaFirebase() {
+            if (!firebaseDb) return;
+            
+            const EXCLUIR = ['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'];
+
+            const estado = {
+                professores: JSON.parse(localStorage.getItem('ginasio_professores') || '[]'),
+                aulas: JSON.parse(localStorage.getItem('ginasio_aulas') || '[]'),
+                horarios: JSON.parse(localStorage.getItem('ginasio_horarios') || '[]'),
+                grade: {},
+                fixo: {}
+            };
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (EXCLUIR.includes(key)) continue;
+                try {
+                    if (key.startsWith('fixed-')) {
+                        // Chaves do horÃ¡rio fixo
+                        estado.fixo[key] = JSON.parse(localStorage.getItem(key) || '{}');
+                    } else if (key.includes('-')) {
+                        // Chaves especÃ­ficas por data (YYYY-MM-DD-HH:MM)
+                        estado.grade[key] = JSON.parse(localStorage.getItem(key) || '{}');
+                    }
+                } catch(e) {}
+            }
+
+            firebaseDb.collection('gyms').doc('default').set(estado)
+                .then(() => {
+                    atualizarBadgeStatus('connected');
+                })
+                .catch(err => {
+                    console.error("Erro ao enviar para Firebase:", err);
+                    atualizarBadgeStatus('error');
+                });
+        }
+
+        function atualizarBadgeStatus(status) {
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            if (!dot || !text) return;
+
+            switch(status) {
+                case 'connected':
+                    dot.style.backgroundColor = '#28a745';
+                    dot.style.boxShadow = '0 0 8px #28a745';
+                    text.innerText = 'Firebase: Ligado (Sincronizado)';
+                    break;
+                case 'connecting':
+                    dot.style.backgroundColor = '#ffc107';
+                    dot.style.boxShadow = '0 0 8px #ffc107';
+                    text.innerText = 'Firebase: A ligar...';
+                    break;
+                case 'syncing':
+                    dot.style.backgroundColor = '#ffc107';
+                    dot.style.boxShadow = '0 0 8px #ffc107';
+                    text.innerText = 'Firebase: A guardar alteraÃ§Ãµes...';
+                    break;
+                case 'error':
+                    dot.style.backgroundColor = '#dc3545';
+                    dot.style.boxShadow = '0 0 8px #dc3545';
+                    text.innerText = 'Firebase: Erro na ligaÃ§Ã£o';
+                    break;
+                case 'disconnected':
+                default:
+                    dot.style.backgroundColor = '#6c757d';
+                    dot.style.boxShadow = 'none';
+                    text.innerText = 'Firebase: NÃ£o configurado';
+                    break;
+            }
+        }
+
+        function inicializarSincronizacaoFirebase() {
+            let configStr = localStorage.getItem('ginasio_firebase_config');
+            let config = null;
+
+            if (configStr) {
+                try {
+                    config = JSON.parse(configStr);
+                } catch(e) {}
+            }
+
+            // ConfiguraÃ§Ã£o padrÃ£o do Firebase
+            if (!config) {
+                config = {
+                    apiKey: "AIzaSyBdfFVyykgYtp6R1l7NGMJ8v4Fd1briIaA",
+                    authDomain: "pagamento-profs.firebaseapp.com",
+                    projectId: "pagamento-profs",
+                    storageBucket: "pagamento-profs.firebasestorage.app",
+                    messagingSenderId: "684859509531",
+                    appId: "1:684859509531:web:9f62c4657bcff3f62561be"
+                };
+                localStorage.setItem('ginasio_firebase_config', JSON.stringify(config));
+            }
+
+            try {
+                firebase.initializeApp(config);
+                firebaseDb = firebase.firestore();
+                
+                atualizarBadgeStatus('connecting');
+
+                firebaseDb.collection('gyms').doc('default').onSnapshot(doc => {
+                    if (doc.exists) {
+                        isSyncingFromFirebase = true;
+                        const data = doc.data();
+
+                        // Limpar chaves de horÃ¡rios especÃ­ficos e fixos do localStorage
+                        const EXCLUIR = ['ginasio_professores', 'ginasio_aulas', 'ginasio_horarios', 'ginasio_firebase_config'];
+                        for (let i = localStorage.length - 1; i >= 0; i--) {
+                            const key = localStorage.key(i);
+                            if (!EXCLUIR.includes(key) && key.includes('-')) {
+                                originalRemoveItem.call(localStorage, key);
+                            }
+                        }
+
+                        if (data.professores) originalSetItem.call(localStorage, 'ginasio_professores', JSON.stringify(data.professores));
+                        if (data.aulas) originalSetItem.call(localStorage, 'ginasio_aulas', JSON.stringify(data.aulas));
+                        if (data.horarios) originalSetItem.call(localStorage, 'ginasio_horarios', JSON.stringify(data.horarios));
+                        
+                        if (data.grade) {
+                            Object.keys(data.grade).forEach(key => {
+                                originalSetItem.call(localStorage, key, JSON.stringify(data.grade[key]));
+                            });
+                        }
+
+                        // Restaurar horÃ¡rios fixos
+                        if (data.fixo) {
+                            Object.keys(data.fixo).forEach(key => {
+                                originalSetItem.call(localStorage, key, JSON.stringify(data.fixo[key]));
+                            });
+                        }
+
+                        carregarDados();
+                        renderizarProfessores();
+                        renderizarAulas();
+                        renderizarGradeHorarios();
+                        if (typeof renderizarResumoMensalCompleto === 'function') {
+                            renderizarResumoMensalCompleto();
+                        }
+
+                        isSyncingFromFirebase = false;
+                        atualizarBadgeStatus('connected');
+                    } else {
+                        console.log("Inicializando Firestore com dados locais...");
+                        enviarEstadoParaFirebase();
+                    }
+                }, err => {
+                    console.error("Erro na sincronizaÃ§Ã£o Firebase:", err);
+                    atualizarBadgeStatus('error');
+                });
+            } catch(e) {
+                console.error("Erro ao inicializar Firebase:", e);
+                atualizarBadgeStatus('error');
+            }
+        }
+
+        // Modais de ConfiguraÃ§Ã£o do Firebase
+        function abrirModalFirebaseConfig() {
+            const modal = document.getElementById('modalFirebaseConfig');
+            const textarea = document.getElementById('firebaseConfigText');
+            modal.style.display = 'flex';
+            
+            const config = localStorage.getItem('ginasio_firebase_config');
+            if (config) {
+                textarea.value = JSON.stringify(JSON.parse(config), null, 2);
+            } else {
+                textarea.value = '';
+            }
+        }
+
+        // Fechar modal de configuraÃ§Ã£o
+        function fecharModalFirebaseConfig() {
+            document.getElementById('modalFirebaseConfig').style.display = 'none';
+        }
+
+        function salvarFirebaseConfig(event) {
+            event.preventDefault();
+            const texto = document.getElementById('firebaseConfigText').value.trim();
+            
+            try {
+                let configObj = null;
+                
+                // 1. Tentar analisar como JSON direto
+                try {
+                    configObj = JSON.parse(texto);
+                } catch(e) {}
+                
+                // 2. Se falhar, tentar extrair e avaliar o objeto JavaScript
+                if (!configObj) {
+                    const match = texto.match(/\{[\s\S]*\}/);
+                    if (match) {
+                        try {
+                            // Cria uma funÃ§Ã£o temporÃ¡ria para devolver o objeto literal avaliado de forma segura
+                            configObj = new Function("return " + match[0])();
+                        } catch(err) {
+                            console.error("Erro na interpretaÃ§Ã£o do objeto JS:", err);
+                        }
+                    }
+                }
+                
+                if (configObj && configObj.apiKey && configObj.projectId) {
+                    localStorage.setItem('ginasio_firebase_config', JSON.stringify(configObj));
+                    alert("ConfiguraÃ§Ã£o guardada com sucesso! A recarregar...");
+                    location.reload();
+                } else {
+                    throw new Error("Formato invÃ¡lido ou campos em falta.");
+                }
+            } catch(err) {
+                alert("Erro ao ler a configuraÃ§Ã£o. Por favor certifique-se de que colou o bloco de configuraÃ§Ã£o correto do Firebase Console.");
+            }
+        }
+
+        function limparFirebaseConfig() {
+            if (confirm("Deseja desligar o Firebase e voltar a usar armazenamento local simples?")) {
+                localStorage.removeItem('ginasio_firebase_config');
+                alert("ConfiguraÃ§Ã£o apagada. A recarregar...");
+                location.reload();
+            }
+        }
+
+        // FunÃ§Ãµes para guardar e carregar dados do localStorage
+        function carregarDados() {
+            // Carregar professores
+            const professoresSalvos = localStorage.getItem('ginasio_professores');
+            if (professoresSalvos) {
+                professores = JSON.parse(professoresSalvos);
+            } else {
+                // Dados iniciais se nÃ£o existir nada guardado
+                professores = [
+                    { id: 1, nome: "Carlos Silva" },
+                    { id: 2, nome: "Ana Santos" },
+                    { id: 3, nome: "Miguel Oliveira" }
+                ];
+                guardarProfessores();
+            }
+
+            // Carregar aulas
+            const aulasSalvas = localStorage.getItem('ginasio_aulas');
+            if (aulasSalvas) {
+                aulas = JSON.parse(aulasSalvas);
+            } else {
+                // Dados iniciais se nÃ£o existir nada guardado
+                aulas = [
+                    { 
+                        id: 1, 
+                        nome: "MusculaÃ§Ã£o", 
+                        preco: 25.00, 
+                        cor: "#ff6b6b"
+                    },
+                    { 
+                        id: 2, 
+                        nome: "Pilates", 
+                        preco: 30.00, 
+                        cor: "#4ecdc4"
+                    },
+                    { 
+                        id: 3, 
+                        nome: "CrossFit", 
+                        preco: 35.00, 
+                        cor: "#45b7d1"
+                    }
+                ];
+                guardarAulas();
+            }
+
+            // Carregar horÃ¡rios
+            const horariosSalvos = localStorage.getItem('ginasio_horarios');
+            if (horariosSalvos) {
+                horarios = JSON.parse(horariosSalvos);
+                // Garantir que todos os horÃ¡rios estÃ£o no formato HH:MM
+                horarios = horarios.map(h => formatarHoraParaVisual(h));
+            } else {
+                horarios = ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+                guardarHorarios();
+            }
+        }
+
+        // FunÃ§Ã£o para formatar hora no formato HH:MM para exibiÃ§Ã£o visual
+        function formatarHoraParaVisual(hora) {
+            if (/^\d{2}:\d{2}$/.test(hora)) {
+                return hora;
+            }
+            
+            if (/^\d{1}:\d{2}$/.test(hora)) {
+                return '0' + hora;
+            }
+            
+            const partes = hora.split(':');
+            if (partes.length === 2) {
+                const horas = partes[0].padStart(2, '0');
+                const minutos = partes[1].padStart(2, '0');
+                return `${horas}:${minutos}`;
+            }
+            
+            return hora;
+        }
+
+        function guardarProfessores() {
+            localStorage.setItem('ginasio_professores', JSON.stringify(professores));
+        }
+
+        function guardarAulas() {
+            localStorage.setItem('ginasio_aulas', JSON.stringify(aulas));
+        }
+
+        function guardarHorarios() {
+            localStorage.setItem('ginasio_horarios', JSON.stringify(horarios));
+        }
+
+        // NOVA FUNÃ‡ÃƒO: Criar chave Ãºnica por DATA especÃ­fica
+        function criarChaveHorario(dia, hora) {
+            // Formato: "YYYY-MM-DD-HH:MM"
+            const dataFormatada = `${dia.getFullYear()}-${(dia.getMonth() + 1).toString().padStart(2, '0')}-${dia.getDate().toString().padStart(2, '0')}`;
+            return `${dataFormatada}-${hora}`;
+        }
+
+        // NOVA FUNÃ‡ÃƒO: Obter TODOS os dias do mÃªs (de 1 ao Ãºltimo dia)
+        function obterTodosDiasDoMes(mes, ano) {
+            const dias = [];
+            
+            // Primeiro dia do mÃªs
+            const primeiroDia = new Date(ano, mes, 1);
+            
+            // Ãšltimo dia do mÃªs
+            const ultimoDia = new Date(ano, mes + 1, 0);
+            
+            // Gerar todos os dias do mÃªs
+            let dataAtual = new Date(primeiroDia);
+            while (dataAtual <= ultimoDia) {
+                dias.push(new Date(dataAtual));
+                dataAtual.setDate(dataAtual.getDate() + 1);
+            }
+            
+            return dias;
+        }
+
+        // FUNÃ‡ÃƒO ATUALIZADA: Calcular somatÃ³rio mensal com datas especÃ­ficas
+        function calcularSomatorioMensalCompleto() {
+            const mesSelecionado = parseInt(document.getElementById('selectMes').value);
+            const anoSelecionado = parseInt(document.getElementById('selectAno').value);
+            
+            const somatorio = {};
+            const detalhes = {};
+            
+            // Inicializar somatÃ³rio para cada professor
+            professores.forEach(professor => {
+                somatorio[professor.id] = {
+                    nome: professor.nome,
+                    total: 0,
+                    aulas: 0,
+                    detalhes: {}
+                };
+            });
+            
+            // Obter TODOS os dias do mÃªs
+            const diasDoMes = obterTodosDiasDoMes(mesSelecionado, anoSelecionado);
+            
+            // Calcular para cada dia do mÃªs (dados especÃ­ficos + fallback para fixo)
+            diasDoMes.forEach(dia => {
+                horarios.forEach(hora => {
+                    // Usa obterDadosSlot para considerar fixo quando nÃ£o hÃ¡ dado especÃ­fico
+                    const { dados } = obterDadosSlot(dia, hora);
+                    
+                    if (dados.aulaId && dados.professorId) {
+                        const aula = aulas.find(a => a.id == dados.aulaId);
+                        const professorId = dados.professorId;
+                        
+                        if (aula && somatorio[professorId]) {
+                            somatorio[professorId].total += aula.preco;
+                            somatorio[professorId].aulas += 1;
+                            
+                            if (!somatorio[professorId].detalhes[aula.nome]) {
+                                somatorio[professorId].detalhes[aula.nome] = {
+                                    quantidade: 0,
+                                    total: 0,
+                                    preco: aula.preco
+                                };
+                            }
+                            somatorio[professorId].detalhes[aula.nome].quantidade += 1;
+                            somatorio[professorId].detalhes[aula.nome].total += aula.preco;
+                        }
+                    }
+                });
+            });
+            
+            return {
+                somatorio: somatorio,
+                totalDias: diasDoMes.length,
+                mes: mesSelecionado,
+                ano: anoSelecionado
+            };
+        }
+
+        // FunÃ§Ã£o para renderizar o resumo mensal completo
+        function renderizarResumoMensalCompleto() {
+            const container = document.getElementById('resumoMensal');
+            const resultado = calcularSomatorioMensalCompleto();
+            const somatorio = resultado.somatorio;
+            const totalDias = resultado.totalDias;
+            const mes = resultado.mes;
+            const ano = resultado.ano;
+            
+            const nomesMesesCompletos = [
+                'Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho',
+                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+            ];
+            
+            let html = `<div class="info-calculo">Calculado com base em ${totalDias} dias de ${nomesMesesCompletos[mes]} ${ano}</div>`;
+            
+            const professoresComAulas = Object.values(somatorio).filter(p => p.aulas > 0);
+            
+            if (professoresComAulas.length === 0) {
+                html += '<div class="resumo-vazio">Nenhuma aula atribuÃ­da a professores este mÃªs</div>';
+            } else {
+                professoresComAulas.sort((a, b) => b.total - a.total);
+                
+                professoresComAulas.forEach(prof => {
+                    html += `
+                        <div class="resumo-professor">
+                            <div class="resumo-nome">${prof.nome}</div>
+                            <div class="resumo-total">â‚¬ ${prof.total.toFixed(2)} (${prof.aulas} aulas)</div>
+                        </div>
+                    `;
+                    
+                    // Adicionar detalhes por tipo de aula
+                    const tiposAula = Object.keys(prof.detalhes);
+                    if (tiposAula.length > 0) {
+                        tiposAula.forEach(tipoAula => {
+                            const detalhe = prof.detalhes[tipoAula];
+                            html += `
+                                <div class="resumo-professor detalhe">
+                                    <div class="resumo-detalhe">
+                                        <span>â†³ ${tipoAula}</span>
+                                        <span>${detalhe.quantidade} Ã— â‚¬${detalhe.preco.toFixed(2)} = â‚¬${detalhe.total.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+                
+                // Total geral
+                const totalGeral = professoresComAulas.reduce((sum, prof) => sum + prof.total, 0);
+                const totalAulas = professoresComAulas.reduce((sum, prof) => sum + prof.aulas, 0);
+                
+                html += `
+                    <div class="resumo-professor total-geral">
+                        <div class="resumo-nome">TOTAL GERAL</div>
+                        <div class="resumo-total">â‚¬ ${totalGeral.toFixed(2)} (${totalAulas} aulas)</div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // FunÃ§Ã£o para atualizar o resumo mensal
+        function atualizarResumoMensal() {
+            renderizarResumoMensalCompleto();
+        }
+
+        // FUNÃ‡ÃƒO ATUALIZADA: Gerar PDF compacto em uma pÃ¡gina A4
+        function gerarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const mesSelecionado = parseInt(document.getElementById('selectMes').value);
+            const anoSelecionado = parseInt(document.getElementById('selectAno').value);
+            
+            const nomesMesesCompletos = [
+                'Janeiro', 'Fevereiro', 'MarÃ§o', 'Abril', 'Maio', 'Junho',
+                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+            ];
+            
+            const resultado = calcularSomatorioMensalCompleto();
+            const somatorio = resultado.somatorio;
+            const totalDias = resultado.totalDias;
+            
+            // Margens e dimensÃµes otimizadas
+            const margin = 10;
+            const pageWidth = 210;
+            const contentWidth = pageWidth - (margin * 2);
+            let yPosition = margin + 10;
+
+            // CABEÃ‡ALHO COMPACTO
+            doc.setFontSize(16);
+            doc.setTextColor(40, 40, 40);
+            doc.setFont(undefined, 'bold');
+            doc.text(`RELATÃ“RIO MENSAL - ${nomesMesesCompletos[mesSelecionado].toUpperCase()} ${anoSelecionado}`, pageWidth / 2, yPosition, { align: 'center' });
+            yPosition += 8;
+
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Calculado com base em ${totalDias} dias | Gerado em ${new Date().toLocaleDateString('pt-PT')}`, pageWidth / 2, yPosition, { align: 'center' });
+            yPosition += 15;
+
+            // Preparar dados
+            const professoresComAulas = Object.values(somatorio).filter(p => p.aulas > 0);
+            
+            if (professoresComAulas.length === 0) {
+                doc.setFontSize(11);
+                doc.setTextColor(100, 100, 100);
+                doc.text('Nenhuma aula atribuÃ­da a professores este mÃªs', pageWidth / 2, yPosition + 20, { align: 'center' });
+            } else {
+                professoresComAulas.sort((a, b) => b.total - a.total);
+
+                // TABELA PRINCIPAL COMPACTA
+                const tableData = professoresComAulas.map(prof => [
+                    prof.nome,
+                    prof.aulas.toString(),
+                    `â‚¬${prof.total.toFixed(2)}`
+                ]);
+
+                doc.autoTable({
+                    startY: yPosition,
+                    head: [['PROFESSOR', 'AULAS', 'VALOR']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [41, 128, 185],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                        fontSize: 9
+                    },
+                    bodyStyles: {
+                        fontSize: 8,
+                        cellPadding: 2,
+                        textColor: [40, 40, 40]
+                    },
+                    styles: {
+                        fontSize: 8,
+                        cellPadding: 2,
+                        lineWidth: 0.1
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 70, fontStyle: 'bold' },
+                        1: { cellWidth: 25, halign: 'center' },
+                        2: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+                    },
+                    margin: { left: margin, right: margin },
+                    tableWidth: contentWidth
+                });
+
+                yPosition = doc.lastAutoTable.finalY + 8;
+
+                // DETALHES COMPACTOS
+                doc.setFontSize(10);
+                doc.setTextColor(41, 128, 185);
+                doc.setFont(undefined, 'bold');
+                doc.text('DETALHES POR AULA', margin, yPosition);
+                yPosition += 6;
+
+                // Tabela de detalhes compacta
+                const detalhesData = [];
+                professoresComAulas.forEach(prof => {
+                    const tiposAula = Object.keys(prof.detalhes);
+                    if (tiposAula.length > 0) {
+                        tiposAula.forEach(tipoAula => {
+                            const detalhe = prof.detalhes[tipoAula];
+                            detalhesData.push([
+                                prof.nome,
+                                tipoAula,
+                                detalhe.quantidade.toString(),
+                                `â‚¬${detalhe.total.toFixed(2)}`
+                            ]);
+                        });
+                    }
+                });
+
+                if (detalhesData.length > 0) {
+                    doc.autoTable({
+                        startY: yPosition,
+                        head: [['PROFESSOR', 'AULA', 'QTD', 'TOTAL']],
+                        body: detalhesData,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [52, 152, 219],
+                            textColor: 255,
+                            fontStyle: 'bold',
+                            fontSize: 8
+                        },
+                        bodyStyles: {
+                            fontSize: 7,
+                            cellPadding: 1.5,
+                            textColor: [60, 60, 60]
+                        },
+                        styles: {
+                            fontSize: 7,
+                            cellPadding: 1.5,
+                            lineWidth: 0.1
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 45, fontStyle: 'bold' },
+                            1: { cellWidth: 50 },
+                            2: { cellWidth: 15, halign: 'center' },
+                            3: { cellWidth: 25, halign: 'right' }
+                        },
+                        margin: { left: margin, right: margin },
+                        tableWidth: contentWidth
+                    });
+
+                    yPosition = doc.lastAutoTable.finalY + 10;
+                }
+
+                // RESUMO FINAL COMPACTO
+                const totalGeral = professoresComAulas.reduce((sum, prof) => sum + prof.total, 0);
+                const totalAulas = professoresComAulas.reduce((sum, prof) => sum + prof.aulas, 0);
+
+                // Linha separadora
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 8;
+
+                // Totais
+                doc.setFontSize(11);
+                doc.setTextColor(40, 40, 40);
+                doc.setFont(undefined, 'bold');
+                
+                const totalText = `TOTAL GERAL: â‚¬${totalGeral.toFixed(2)} (${totalAulas} aulas)`;
+                const totalWidth = doc.getTextWidth(totalText);
+                doc.text(totalText, pageWidth - margin - totalWidth, yPosition);
+
+                // EstatÃ­sticas rÃ¡pidas
+                doc.setFontSize(9);
+                doc.setTextColor(100, 100, 100);
+                doc.setFont(undefined, 'normal');
+                doc.text(`MÃ©dia por professor: â‚¬${(totalGeral / professoresComAulas.length).toFixed(2)}`, margin, yPosition);
+                yPosition += 5;
+                doc.text(`Professores ativos: ${professoresComAulas.length}`, margin, yPosition);
+            }
+
+            // RODAPÃ‰ COMPACTO
+            const dataGeracao = new Date().toLocaleDateString('pt-PT');
+            const horaGeracao = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+            
+            doc.setFontSize(7);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Sistema de GestÃ£o de GinÃ¡sio | Gerado em ${dataGeracao} Ã s ${horaGeracao}`, pageWidth / 2, 285, { align: 'center' });
+
+            // Salvar o PDF
+            doc.save(`Relatorio_${nomesMesesCompletos[mesSelecionado]}_${anoSelecionado}.pdf`);
+        }
+
+        // VariÃ¡veis globais
+        let professores = [];
+        let aulas = [];
+        let horarios = [];
+        const diasSemana = ['Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta', 'SÃ¡bado', 'Domingo'];
+        const nomesDias = ['Domingo', 'Segunda', 'TerÃ§a', 'Quarta', 'Quinta', 'Sexta', 'SÃ¡bado'];
+        const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        
+        // VariÃ¡veis para associaÃ§Ã£o
+        let horarioSelecionado = null;
+        let diaSelecionado = null;
+        let opcaoAtual = null;
+        let professorSelecionado = null;
+        let horarioEditando = null;
+        let semanaAtual = 0;
+        let modoFixoAtivo = false;
+
+        // ---- HORÃRIO FIXO: Helpers ----
+
+        // Cria a chave do template fixo: fixed-WEEKDAY(0=Seg..6=Dom)-HH:MM
+        function criarChaveFixo(diaDaSemana, hora) {
+            return `fixed-${diaDaSemana}-${hora}`;
+        }
+
+        // ObtÃ©m dados do template fixo para um dia da semana e hora
+        function obterHorarioFixo(diaDaSemana, hora) {
+            const chave = criarChaveFixo(diaDaSemana, hora);
+            try {
+                return JSON.parse(localStorage.getItem(chave) || '{}');
+            } catch(e) { return {}; }
+        }
+
+        // Guarda dados no template fixo
+        function guardarHorarioFixo(diaDaSemana, hora, dados) {
+            const chave = criarChaveFixo(diaDaSemana, hora);
+            if (dados && Object.keys(dados).length > 0) {
+                localStorage.setItem(chave, JSON.stringify(dados));
+            } else {
+                localStorage.removeItem(chave);
+            }
+        }
+
+        // ObtÃ©m dados de um slot: prioriza dados especÃ­ficos da data; fallback para fixo
+        // Retorna { dados, fonte } onde fonte Ã© 'especifico' | 'fixo' | 'vazio'
+        // Helper: lÃª dados do template fixo a partir de uma chave especÃ­fica por data
+        // chaveEspecifica formato: YYYY-MM-DD-HH:MM
+        function obterDadosFixoParaChaveEspecifica(chaveEspecifica) {
+            // Se a chave comeÃ§ar com 'fixed-', nÃ£o Ã© uma chave especÃ­fica, retorna objeto vazio
+            if (chaveEspecifica.startsWith('fixed-')) return {};
+            
+            const parts = chaveEspecifica.split('-');
+            if (parts.length < 4) return {};
+            try {
+                const year = parseInt(parts[0]);
+                const month = parseInt(parts[1]) - 1;
+                const day = parseInt(parts[2]);
+                const hora = parts[3]; // HH:MM
+                const data = new Date(year, month, day);
+                const diaSemana = ((data.getDay() + 6) % 7);
+                return obterHorarioFixo(diaSemana, hora);
+            } catch(e) { return {}; }
+        }
+
+        function obterDadosSlot(dia, hora) {
+            const chaveEspecifica = criarChaveHorario(dia, hora);
+            // Verificar se existe uma chave especÃ­fica para esta data
+            // (mesmo que vazia, Ã© um override explÃ­cito do template fixo)
+            const rawEspecifico = localStorage.getItem(chaveEspecifica);
+
+            if (rawEspecifico !== null) {
+                let dadosEspecificos = {};
+                try { dadosEspecificos = JSON.parse(rawEspecifico); } catch(e) {}
+                const temDados = dadosEspecificos.aulaId || dadosEspecificos.professorId;
+                return {
+                    dados: dadosEspecificos,
+                    fonte: temDados ? 'especifico' : 'vazio',
+                    chave: chaveEspecifica
+                };
+            }
+
+            // Sem chave especÃ­fica â€” fallback para template fixo
+            const diaSemana = ((dia.getDay() + 6) % 7);
+            const dadosFixos = obterHorarioFixo(diaSemana, hora);
+
+            if (dadosFixos.aulaId || dadosFixos.professorId) {
+                return { dados: dadosFixos, fonte: 'fixo', chave: chaveEspecifica };
+            }
+
+            return { dados: {}, fonte: 'vazio', chave: chaveEspecifica };
+        }
+
+        // Toggle do modo de ediÃ§Ã£o de horÃ¡rio fixo
+        function toggleModoFixo() {
+            modoFixoAtivo = !modoFixoAtivo;
+            const btn = document.getElementById('btnModoFixo');
+            const barra = document.getElementById('barraModoFixo');
+            const secaoFixo = document.getElementById('secaoHorarioFixo');
+            
+            if (modoFixoAtivo) {
+                btn.classList.add('ativo');
+                btn.textContent = 'âœ… Fixo Ativo';
+                barra.classList.add('visivel');
+                secaoFixo.style.display = 'block';
+            } else {
+                btn.classList.remove('ativo');
+                btn.textContent = 'ðŸ” HorÃ¡rio Fixo';
+                barra.classList.remove('visivel');
+                secaoFixo.style.display = 'none';
+            }
+            renderizarGradeHorarios();
+            renderizarHorarioFixoLateral();
+        }
+
+        // Copia os dados da semana atual para o template fixo
+        function copiarSemanaParaFixo() {
+            if (!confirm('Copiar os horÃ¡rios da semana atual para o template fixo? O template fixo anterior serÃ¡ substituÃ­do.')) return;
+            const dias = obterDiasDaSemana(semanaAtual);
+            // Limpar fixo antes
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) originalRemoveItem.call(localStorage, k);
+            }
+            dias.forEach((dia, idx) => {
+                horarios.forEach(hora => {
+                    const chave = criarChaveHorario(dia, hora);
+                    let dados = {};
+                    try { dados = JSON.parse(localStorage.getItem(chave) || '{}'); } catch(e) {}
+                    if (dados.aulaId || dados.professorId) {
+                        guardarHorarioFixo(idx, hora, dados);
+                    }
+                });
+            });
+            alert('HorÃ¡rio fixo atualizado com os dados da semana atual!');
+            renderizarGradeHorarios();
+        }
+
+        // Limpa apenas as aulas do template fixo (mantÃ©m professores)
+        function limparAulasFixas() {
+            if (!confirm('Tem a certeza que quer apagar todas as aulas do horÃ¡rio fixo semanal? Os professores permanecerÃ£o.')) return;
+            
+            let removidas = 0;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) {
+                    try {
+                        const dados = JSON.parse(localStorage.getItem(k) || '{}');
+                        if (dados.aulaId) {
+                            delete dados.aulaId;
+                            removidas++;
+                            if (Object.keys(dados).length === 0) {
+                                localStorage.removeItem(k);
+                            } else {
+                                localStorage.setItem(k, JSON.stringify(dados));
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+            
+            renderizarGradeHorarios();
+            alert(`Removidas ${removidas} aulas do horÃ¡rio fixo.`);
+        }
+
+        // Limpa apenas os professores do template fixo (mantÃ©m aulas)
+        function limparProfessoresFixos() {
+            if (!confirm('Tem a certeza que quer apagar todos os professores do horÃ¡rio fixo semanal? As aulas permanecerÃ£o.')) return;
+            
+            let removidos = 0;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) {
+                    try {
+                        const dados = JSON.parse(localStorage.getItem(k) || '{}');
+                        if (dados.professorId) {
+                            delete dados.professorId;
+                            removidos++;
+                            if (Object.keys(dados).length === 0) {
+                                localStorage.removeItem(k);
+                            } else {
+                                localStorage.setItem(k, JSON.stringify(dados));
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+            
+            renderizarGradeHorarios();
+            alert(`Removidos ${removidos} professores do horÃ¡rio fixo.`);
+        }
+
+        // Limpa todo o template fixo
+        function limparHorarioFixo() {
+            if (!confirm('Tem a certeza que quer apagar o horÃ¡rio fixo semanal? Esta aÃ§Ã£o Ã© irreversÃ­vel.')) return;
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('fixed-')) localStorage.removeItem(k);
+            }
+            renderizarGradeHorarios();
+            renderizarHorarioFixoLateral();
+            alert('HorÃ¡rio fixo apagado.');
+        }
+
+        // FunÃ§Ãµes para datas
+        function obterDiasDaSemana(semanaOffset = 0) {
+            const hoje = new Date();
+            const diaSemana = hoje.getDay();
+            
+            const diferencaSegunda = diaSemana === 0 ? -6 : 1 - diaSemana;
+            const segundaFeira = new Date(hoje);
+            segundaFeira.setDate(hoje.getDate() + diferencaSegunda + (semanaOffset * 7));
+            
+            const dias = [];
+            for (let i = 0; i < 7; i++) {
+                const dia = new Date(segundaFeira);
+                dia.setDate(segundaFeira.getDate() + i);
+                dias.push(dia);
+            }
+            
+            return dias;
+        }
+
+        function formatarDataParaDia(dia) {
+            return `${dia.getDate()} ${nomesMeses[dia.getMonth()]}`;
+        }
+
+        function formatarDataCompleta(dia) {
+            return `${dia.getDate()}/${dia.getMonth() + 1}/${dia.getFullYear()}`;
+        }
+
+        function obterInfoSemana(dias) {
+            const primeiroDia = dias[0];
+            const ultimoDia = dias[6];
+            return `Semana de ${primeiroDia.getDate()} ${nomesMeses[primeiroDia.getMonth()]} a ${ultimoDia.getDate()} ${nomesMeses[ultimoDia.getMonth()]} ${ultimoDia.getFullYear()}`;
+        }
+
+        function ehHoje(dia) {
+            const hoje = new Date();
+            return dia.getDate() === hoje.getDate() && 
+                   dia.getMonth() === hoje.getMonth() && 
+                   dia.getFullYear() === hoje.getFullYear();
+        }
+
+        // FUNÃ‡ÃƒO ATUALIZADA: Renderizar grade com datas especÃ­ficas
+        function renderizarGradeHorarios() {
+            const container = document.getElementById('gradeHorarios');
+            const header = document.getElementById('gradeHeader');
+            const dias = obterDiasDaSemana(semanaAtual);
+            
+            document.getElementById('infoSemana').textContent = obterInfoSemana(dias);
+            
+            header.innerHTML = `
+                <div>
+                    HorÃ¡rios
+                    <button class="btn-hora" onclick="adicionarHorario()" title="Adicionar horÃ¡rio">+</button>
+                </div>
+                ${dias.map((dia, index) => {
+                    const classeHoje = ehHoje(dia) ? 'dia-hoje' : '';
+                    return `
+                        <div class="dia-slot ${classeHoje}">
+                            <div class="dia-nome">${diasSemana[index]}</div>
+                            <div class="dia-data">${formatarDataParaDia(dia)}</div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+            
+            container.innerHTML = '';
+            
+            const horariosUnicos = [...new Set(horarios)];
+            if (horariosUnicos.length !== horarios.length) {
+                horarios = horariosUnicos.sort();
+                guardarHorarios();
+            }
+            
+            horarios.forEach((hora, index) => {
+                const horaFormatada = formatarHoraParaVisual(hora);
+                const horaSlot = document.createElement('div');
+                horaSlot.className = 'hora-slot';
+                horaSlot.innerHTML = `
+                    <div class="hora-display" onclick="editarHorario(${index})">${horaFormatada}</div>
+                    <input type="time" class="hora-editavel" value="${horaFormatada}" 
+                           onblur="atualizarHorario(${index}, this.value)" 
+                           onkeypress="if(event.key === 'Enter') this.blur()">
+                    <button class="btn-remover-hora" onclick="removerHorario(${index})" title="Remover horÃ¡rio">Ã—</button>
+                    <button class="btn-adicionar-linha btn-adicionar-acima" onclick="adicionarLinha(${index}, 'acima')" title="Adicionar linha acima">+</button>
+                    <button class="btn-adicionar-linha btn-adicionar-abaixo" onclick="adicionarLinha(${index}, 'abaixo')" title="Adicionar linha abaixo">+</button>
+                `;
+                container.appendChild(horaSlot);
+                
+                // MODO FIXO ou ESPECÃFICO POR DATA
+                dias.forEach((dia, diaIdx) => {
+                    const diaSemana = ((dia.getDay() + 6) % 7);
+                    const chaveEspecifica = criarChaveHorario(dia, hora);
+                    const chaveFixo = criarChaveFixo(diaSemana, hora);
+
+                    // Em modo fixo: edita o template. Fora do modo fixo: usa camada dupla.
+                    let dados, chaveParaEdicao, vemDoFixo;
+
+                    if (modoFixoAtivo) {
+                        dados = obterHorarioFixo(diaSemana, hora);
+                        chaveParaEdicao = chaveFixo;
+                        vemDoFixo = false; // estamos em modo ediÃ§Ã£o direta do fixo
+                    } else {
+                        const resultado = obterDadosSlot(dia, hora);
+                        dados = resultado.dados;
+                        chaveParaEdicao = resultado.chave; // sempre a chave especÃ­fica por data
+                        vemDoFixo = resultado.fonte === 'fixo';
+                    }
+
+                    const aula = aulas.find(a => a.id == dados.aulaId);
+                    const professor = professores.find(p => p.id == dados.professorId);
+                    
+                    const slot = document.createElement('div');
+                    slot.className = 'aula-slot' + (vemDoFixo ? ' fixo' : '');
+                    
+                    if (aula) {
+                        slot.style.background = aula.cor;
+                    } else if (professor) {
+                        slot.style.background = '#334155';
+                    } else {
+                        slot.className += ' vazia';
+                        slot.style.background = modoFixoAtivo ? 'rgba(139, 92, 246, 0.08)' : '';
+                    }
+                    
+                    // Adicionar atributo data para indicar se vem do fixo
+                    if (vemDoFixo) {
+                        slot.setAttribute('data-fixo', 'true');
+                    }
+                    
+                    let conteudo = '';
+                    // O badge fixo agora Ã© feito via CSS (pseudoelementos), entÃ£o removemos o HTML
+
+                    if (aula) {
+                        conteudo += `<div class="aula-nome-grade">${aula.nome}</div>`;
+                        conteudo += `<div class="aula-preco-grade">â‚¬ ${aula.preco.toFixed(2)}</div>`;
+                    }
+                    
+                    if (professor) {
+                        conteudo += `<div class="aula-professor-grade">ðŸ‘¨â€ðŸ« ${professor.nome}</div>`;
+                    }
+
+                    // Em modo fixo, os botÃµes de remover operam na chave fixa
+                    let botoesRemocao = '';
+                    if (modoFixoAtivo) {
+                        if (aula) botoesRemocao += `<button class="btn-remover-aula" title="Remover aula do horÃ¡rio fixo" onclick="event.stopPropagation(); removerAulaDoHorarioFixo('${chaveFixo}')">Ã—</button>`;
+                        if (professor) botoesRemocao += `<button class="btn-remover-professor" title="Remover professor do horÃ¡rio fixo" onclick="event.stopPropagation(); removerProfessorDoHorarioFixo('${chaveFixo}')">Ã—</button>`;
+                    } else {
+                        if (aula) botoesRemocao += `<button class="btn-remover-aula" title="Remover aula deste horÃ¡rio" onclick="event.stopPropagation(); removerAulaDoHorario('${chaveParaEdicao}')">Ã—</button>`;
+                        if (professor) botoesRemocao += `<button class="btn-remover-professor" title="Remover professor deste horÃ¡rio" onclick="event.stopPropagation(); removerProfessorDoHorario('${chaveParaEdicao}')">Ã—</button>`;
+                    }
+                    
+                    let botoesAdicao = '';
+                    if (!aula || !professor) {
+                        const chaveModal = modoFixoAtivo ? chaveFixo : chaveParaEdicao;
+                        const diaLabel = modoFixoAtivo ? diasSemana[diaSemana] : formatarDataParaDia(dia);
+                        botoesAdicao = `
+                            <div class="botoes-adicionar">
+                                ${!aula ? `<button class="btn-add-horario" onclick="abrirModalRapido('${chaveModal}', '${diaLabel}', '${hora}')">+ Aula</button>` : ''}
+                                ${!professor ? `<button class="btn-add-professor" onclick="abrirModalProfessorRapido('${chaveModal}', '${diaLabel}', '${hora}')">+ Professor</button>` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    slot.innerHTML = `
+                        ${botoesRemocao}
+                        ${conteudo}
+                        ${botoesAdicao}
+                    `;
+                    
+                    container.appendChild(slot);
+                });
+            });
+            
+            renderizarResumoMensalCompleto();
+            renderizarHorarioFixoLateral();
+        }
+
+        // FUNÃ‡Ã•ES ATUALIZADAS: Modais agora recebem chave especÃ­fica por data
+        function abrirModalRapido(chaveHorario, diaDisplay, hora) {
+            horarioSelecionado = chaveHorario;
+            diaSelecionado = diaDisplay;
+            opcaoAtual = null;
+            
+            const modal = document.getElementById('modalRapido');
+            document.getElementById('infoHorario').textContent = diaDisplay;
+            document.getElementById('infoHora').textContent = formatarHoraParaVisual(hora);
+            
+            document.getElementById('opcao-aula-existente').style.display = 'none';
+            document.getElementById('opcao-aula-rapida').style.display = 'none';
+            document.getElementById('btnConfirmarAula').style.display = 'none';
+            
+            modal.style.display = 'flex';
+        }
+
+        function abrirModalProfessorRapido(chaveHorario, diaDisplay, hora) {
+            horarioSelecionado = chaveHorario;
+            diaSelecionado = diaDisplay;
+            professorSelecionado = null;
+            
+            const modal = document.getElementById('modalProfessorRapido');
+            document.getElementById('infoHorarioProfessor').textContent = diaDisplay;
+            document.getElementById('infoHoraProfessor').textContent = formatarHoraParaVisual(hora);
+            
+            carregarProfessoresRapidos();
+            modal.style.display = 'flex';
+        }
+
+        // FUNÃ‡Ã•ES ATUALIZADAS: ConfirmaÃ§Ãµes usam chave especÃ­fica
+        function confirmarAula() {
+            if (!horarioSelecionado) return;
+            
+            // Debug: mostrar qual chave estÃ¡ sendo usada
+            console.log('Modo fixo ativo?', modoFixoAtivo);
+            console.log('Chave selecionada:', horarioSelecionado);
+            
+            const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
+
+            // Preservar professorId do template fixo caso nÃ£o esteja jÃ¡ na chave especÃ­fica
+            // SÃ³ faz isso se NÃƒO estiver no modo fixo (chave comeÃ§a com 'fixed-')
+            if (!dadosAtuais.professorId && !horarioSelecionado.startsWith('fixed-')) {
+                const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
+                if (dadosFixo.professorId) {
+                    dadosAtuais.professorId = dadosFixo.professorId;
+                }
+            }
+            
+            if (opcaoAtual === 'aula-existente' || opcaoAtual?.tipo === 'aula-existente') {
+                if (opcaoAtual.aulaId) {
+                    dadosAtuais.aulaId = opcaoAtual.aulaId;
+                    localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+                    console.log('Aula existente salva na chave:', horarioSelecionado, dadosAtuais);
+                    renderizarGradeHorarios();
+                    fecharModalRapido();
+                } else {
+                    alert('Selecione uma aula primeiro!');
+                    return;
+                }
+            } else if (opcaoAtual === 'aula-rapida') {
+                const nome = document.getElementById('aulaRapidaNome').value;
+                const preco = document.getElementById('aulaRapidaPreco').value;
+                const cor = document.getElementById('aulaRapidaCor').value;
+                
+                if (!nome || !preco) {
+                    alert('Preencha todos os campos!');
+                    return;
+                }
+                
+                const novaAula = {
+                    id: Date.now(),
+                    nome: nome,
+                    preco: parseFloat(preco),
+                    cor: cor
+                };
+                
+                aulas.push(novaAula);
+                guardarAulas();
+                dadosAtuais.aulaId = novaAula.id;
+                localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+                console.log('Aula rÃ¡pida criada e salva na chave:', horarioSelecionado, dadosAtuais);
+                renderizarAulas();
+                renderizarGradeHorarios();
+                fecharModalRapido();
+            } else {
+                alert('Selecione uma opÃ§Ã£o primeiro!');
+                return;
+            }
+        }
+
+        function confirmarProfessor() {
+            if (!horarioSelecionado || !professorSelecionado) {
+                alert('Selecione um professor primeiro!');
+                return;
+            }
+            
+            const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
+
+            // Preservar aulaId do template fixo caso nÃ£o esteja jÃ¡ na chave especÃ­fica
+            // SÃ³ faz isso se NÃƒO estiver no modo fixo (chave comeÃ§a com 'fixed-')
+            if (!dadosAtuais.aulaId && !horarioSelecionado.startsWith('fixed-')) {
+                const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
+                if (dadosFixo.aulaId) {
+                    dadosAtuais.aulaId = dadosFixo.aulaId;
+                }
+            }
+
+            dadosAtuais.professorId = professorSelecionado;
+            localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+            
+            renderizarGradeHorarios();
+            fecharModalProfessorRapido();
+        }
+
+        // Restante das funÃ§Ãµes mantidas (renderizarProfessores, renderizarAulas, etc.)
+        function renderizarProfessores() {
+            const container = document.getElementById('listaProfessores');
+            container.innerHTML = '';
+            
+            const resultado = calcularSomatorioMensalCompleto();
+            const somatorio = resultado.somatorio;
+            
+
+            professores.forEach(professor => {
+                const totalMensal = somatorio[professor.id] ? somatorio[professor.id].total : 0;
+                
+                const item = document.createElement('div');
+                item.className = 'lista-item';
+                item.innerHTML = `
+                    <div class="item-content">
+                        <div class="professor-nome">${professor.nome}</div>
+                        <div class="professor-total">â‚¬ ${totalMensal.toFixed(2)}/mÃªs</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="editarProfessor(${professor.id})">Editar</button>
+                        <button class="btn-delete" onclick="excluirProfessor(${professor.id})">Excluir</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function abrirModalProfessor(professorId = null) {
+            const modal = document.getElementById('modalProfessor');
+            const titulo = document.getElementById('tituloModalProfessor');
+            
+            if (professorId) {
+                const professor = professores.find(p => p.id === professorId);
+                titulo.textContent = 'Editar Professor';
+                document.getElementById('professorId').value = professor.id;
+                document.getElementById('professorNome').value = professor.nome;
+            } else {
+                titulo.textContent = 'Novo Professor';
+                document.getElementById('professorId').value = '';
+                document.getElementById('formProfessor').reset();
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function fecharModalProfessor() {
+            document.getElementById('modalProfessor').style.display = 'none';
+        }
+
+        function salvarProfessor(event) {
+            event.preventDefault();
+            
+            const professorId = document.getElementById('professorId').value;
+            const professor = {
+                id: professorId ? parseInt(professorId) : Date.now(),
+                nome: document.getElementById('professorNome').value
+            };
+            
+            if (professorId) {
+                const index = professores.findIndex(p => p.id === parseInt(professorId));
+                if (index !== -1) {
+                    professores[index] = professor;
+                }
+            } else {
+                professores.push(professor);
+            }
+            
+            guardarProfessores();
+            renderizarProfessores();
+            renderizarResumoMensalCompleto();
+            fecharModalProfessor();
+        }
+
+        function editarProfessor(id) {
+            abrirModalProfessor(id);
+        }
+
+        function excluirProfessor(id) {
+            if (confirm('Tem certeza que deseja excluir este professor?')) {
+                // Remover professor de TODOS os horÃ¡rios (agora com chaves especÃ­ficas)
+                const todasChaves = Object.keys(localStorage);
+                todasChaves.forEach(chave => {
+                    if (chave.includes('-')) { // Ã‰ uma chave de horÃ¡rio
+                        const dados = JSON.parse(localStorage.getItem(chave) || '{}');
+                        if (dados.professorId === id) {
+                            delete dados.professorId;
+                            if (Object.keys(dados).length === 0) {
+                                localStorage.removeItem(chave);
+                            } else {
+                                localStorage.setItem(chave, JSON.stringify(dados));
+                            }
+                        }
+                    }
+                });
+                
+                professores = professores.filter(p => p.id !== id);
+                guardarProfessores();
+                renderizarProfessores();
+                renderizarGradeHorarios();
+                renderizarResumoMensalCompleto();
+            }
+        }
+
+        function renderizarAulas() {
+            const container = document.getElementById('listaAulas');
+            container.innerHTML = '';
+            
+            aulas.forEach(aula => {
+                const item = document.createElement('div');
+                item.className = 'lista-item';
+                item.innerHTML = `
+                    <div class="item-content">
+                        <div class="cor-aula" style="background: ${aula.cor}"></div>
+                        <div class="aula-nome">${aula.nome}</div>
+                    </div>
+                    <div class="aula-preco">â‚¬ ${aula.preco.toFixed(2)}</div>
+                    <div class="item-actions">
+                        <button class="btn-edit" onclick="editarAula(${aula.id})">Editar</button>
+                        <button class="btn-delete" onclick="excluirAula(${aula.id})">Excluir</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function abrirModalAula(aulaId = null) {
+            const modal = document.getElementById('modalAula');
+            const titulo = document.getElementById('tituloModalAula');
+            
+            if (aulaId) {
+                const aula = aulas.find(a => a.id === aulaId);
+                titulo.textContent = 'Editar Aula';
+                document.getElementById('aulaId').value = aula.id;
+                document.getElementById('aulaNome').value = aula.nome;
+                document.getElementById('aulaPreco').value = aula.preco;
+                document.getElementById('aulaCor').value = aula.cor;
+            } else {
+                titulo.textContent = 'Nova Aula';
+                document.getElementById('aulaId').value = '';
+                document.getElementById('formAula').reset();
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function fecharModalAula() {
+            document.getElementById('modalAula').style.display = 'none';
+        }
+
+        function salvarAula(event) {
+            event.preventDefault();
+            
+            const aulaId = document.getElementById('aulaId').value;
+            const aula = {
+                id: aulaId ? parseInt(aulaId) : Date.now(),
+                nome: document.getElementById('aulaNome').value,
+                preco: parseFloat(document.getElementById('aulaPreco').value),
+                cor: document.getElementById('aulaCor').value
+            };
+            
+            if (aulaId) {
+                const index = aulas.findIndex(a => a.id === parseInt(aulaId));
+                if (index !== -1) {
+                    aulas[index] = aula;
+                }
+            } else {
+                aulas.push(aula);
+            }
+            
+            guardarAulas();
+            renderizarAulas();
+            renderizarGradeHorarios();
+            renderizarResumoMensalCompleto();
+            fecharModalAula();
+        }
+
+        function editarAula(id) {
+            abrirModalAula(id);
+        }
+
+        function excluirAula(id) {
+            if (confirm('Tem certeza que deseja excluir esta aula?')) {
+                // Remover aula de TODOS os horÃ¡rios (agora com chaves especÃ­ficas)
+                const todasChaves = Object.keys(localStorage);
+                todasChaves.forEach(chave => {
+                    if (chave.includes('-')) { // Ã‰ uma chave de horÃ¡rio
+                        const dados = JSON.parse(localStorage.getItem(chave) || '{}');
+                        if (dados.aulaId === id) {
+                            delete dados.aulaId;
+                            if (Object.keys(dados).length === 0) {
+                                localStorage.removeItem(chave);
+                            } else {
+                                localStorage.setItem(chave, JSON.stringify(dados));
+                            }
+                        }
+                    }
+                });
+                
+                aulas = aulas.filter(a => a.id !== id);
+                guardarAulas();
+                renderizarAulas();
+                renderizarGradeHorarios();
+                renderizarResumoMensalCompleto();
+            }
+        }
+
+        // FunÃ§Ãµes de gestÃ£o de horÃ¡rios (mantidas)
+        function adicionarLinha(index, posicao) {
+            const horarioAtual = horarios[index];
+            const partes = horarioAtual.split(':');
+            let horas = parseInt(partes[0]);
+            let minutos = parseInt(partes[1]);
+            
+            if (posicao === 'acima') {
+                minutos -= 30;
+                if (minutos < 0) {
+                    minutos += 60;
+                    horas -= 1;
+                }
+            } else {
+                minutos += 30;
+                if (minutos >= 60) {
+                    minutos -= 60;
+                    horas += 1;
+                }
+            }
+            
+            const novoHorario = `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+            
+            if (horarios.includes(novoHorario)) {
+                alert('Este horÃ¡rio jÃ¡ existe!');
+                return;
+            }
+            
+            if (posicao === 'acima') {
+                horarios.splice(index, 0, novoHorario);
+            } else {
+                horarios.splice(index + 1, 0, novoHorario);
+            }
+            
+            horarios.sort();
+            guardarHorarios();
+            renderizarGradeHorarios();
+        }
+
+        function mudarSemana(direcao) {
+            semanaAtual += direcao;
+            renderizarGradeHorarios();
+        }
+
+        function irParaSemanaAtual() {
+            semanaAtual = 0;
+            renderizarGradeHorarios();
+        }
+
+        // Inicializar os seletores do relatÃ³rio mensal com o mÃªs e ano do sistema e gerar anos estendidos
+        function inicializarFiltrosRelatorio() {
+            const hoje = new Date();
+            const anoAtual = hoje.getFullYear();
+            const mesAtual = hoje.getMonth();
+            
+            const selectAno = document.getElementById('selectAno');
+            const selectMes = document.getElementById('selectMes');
+            
+            if (selectAno) {
+                const anoInicial = 2024;
+                const anoFinal = Math.max(anoAtual + 10, 2040);
+                
+                selectAno.innerHTML = '';
+                for (let a = anoInicial; a <= anoFinal; a++) {
+                    const opt = document.createElement('option');
+                    opt.value = a;
+                    opt.textContent = a;
+                    if (a === anoAtual) {
+                        opt.selected = true;
+                    }
+                    selectAno.appendChild(opt);
+                }
+                selectAno.value = anoAtual;
+            }
+            
+            if (selectMes) {
+                selectMes.value = mesAtual;
+            }
+        }
+
+        function irParaMesAtual() {
+            inicializarFiltrosRelatorio();
+            atualizarResumoMensal();
+        }
+
+        function editarHorario(index) {
+            const horaSlot = document.querySelectorAll('.hora-slot')[index];
+            const display = horaSlot.querySelector('.hora-display');
+            const input = horaSlot.querySelector('.hora-editavel');
+            
+            display.style.display = 'none';
+            input.style.display = 'block';
+            input.focus();
+            input.select();
+        }
+
+        function atualizarHorario(index, novoHorario) {
+            if (novoHorario) {
+                const horarioFormatado = formatarHoraParaVisual(novoHorario);
+                
+                if (horarios.some((h, i) => i !== index && h === horarioFormatado)) {
+                    alert('Este horÃ¡rio jÃ¡ existe!');
+                    const horaSlot = document.querySelectorAll('.hora-slot')[index];
+                    const display = horaSlot.querySelector('.hora-display');
+                    const input = horaSlot.querySelector('.hora-editavel');
+                    
+                    display.style.display = 'block';
+                    input.style.display = 'none';
+                    return;
+                }
+                
+                const horarioAntigo = horarios[index];
+                
+                // Atualizar TODAS as chaves que usam este horÃ¡rio
+                const todasChaves = Object.keys(localStorage);
+                todasChaves.forEach(chave => {
+                    if (chave.includes(horarioAntigo)) {
+                        const dados = localStorage.getItem(chave);
+                        const novaChave = chave.replace(horarioAntigo, horarioFormatado);
+                        localStorage.setItem(novaChave, dados);
+                        localStorage.removeItem(chave);
+                    }
+                });
+                
+                horarios[index] = horarioFormatado;
+                guardarHorarios();
+                renderizarGradeHorarios();
+            }
+        }
+
+        function adicionarHorario() {
+            const novoHorario = prompt('Novo horÃ¡rio (formato HH:MM):', '21:00');
+            if (novoHorario && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(novoHorario)) {
+                const horarioFormatado = formatarHoraParaVisual(novoHorario);
+                
+                if (horarios.includes(horarioFormatado)) {
+                    alert('Este horÃ¡rio jÃ¡ existe!');
+                    return;
+                }
+                
+                horarios.push(horarioFormatado);
+                horarios.sort();
+                guardarHorarios();
+                renderizarGradeHorarios();
+            } else if (novoHorario) {
+                alert('Formato de horÃ¡rio invÃ¡lido! Use HH:MM (ex: 09:00)');
+            }
+        }
+
+        function removerHorario(index) {
+            if (confirm('Tem certeza que deseja remover este horÃ¡rio?')) {
+                const horario = horarios[index];
+                
+                // Remover TODAS as chaves que usam este horÃ¡rio
+                const todasChaves = Object.keys(localStorage);
+                todasChaves.forEach(chave => {
+                    if (chave.includes(horario)) {
+                        localStorage.removeItem(chave);
+                    }
+                });
+                
+                horarios.splice(index, 1);
+                guardarHorarios();
+                renderizarGradeHorarios();
+            }
+        }
+
+        // FunÃ§Ãµes para AssociaÃ§Ã£o RÃ¡pida de Aulas
+        function abrirOpcao(opcao) {
+            opcaoAtual = opcao;
+            
+            document.getElementById('opcao-aula-existente').style.display = 'none';
+            document.getElementById('opcao-aula-rapida').style.display = 'none';
+            
+            if (opcao === 'aula-existente') {
+                document.getElementById('opcao-aula-existente').style.display = 'block';
+                carregarAulasExistentes();
+            } else if (opcao === 'aula-rapida') {
+                document.getElementById('opcao-aula-rapida').style.display = 'block';
+            }
+            
+            document.getElementById('btnConfirmarAula').style.display = 'block';
+        }
+
+        function carregarAulasExistentes() {
+            const container = document.getElementById('aulasRapidas');
+            container.innerHTML = '';
+            
+            aulas.forEach(aula => {
+                const item = document.createElement('div');
+                item.className = 'aula-rapida';
+                item.style.borderLeftColor = aula.cor;
+                item.innerHTML = `
+                    <div class="cor-aula" style="background: ${aula.cor}"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 13px; color: #f8fafc;">${aula.nome}</div>
+                        <div style="font-size: 11px; color: #94a3b8">
+                            â‚¬ ${aula.preco.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+                item.onclick = () => {
+                    document.querySelectorAll('.aula-rapida').forEach(a => {
+                        a.style.background = '';
+                        a.style.borderColor = '';
+                    });
+                    item.style.background = 'rgba(99, 102, 241, 0.25)';
+                    item.style.borderColor = '#6366f1';
+                    opcaoAtual = { tipo: 'aula-existente', aulaId: aula.id };
+                };
+                container.appendChild(item);
+            });
+        }
+
+        function selecionarCor(cor) {
+            document.querySelectorAll('.cor-option').forEach(opt => opt.classList.remove('selected'));
+            event.target.classList.add('selected');
+            document.getElementById('aulaRapidaCor').value = cor;
+        }
+
+        function fecharModalRapido() {
+            document.getElementById('modalRapido').style.display = 'none';
+            horarioSelecionado = null;
+            diaSelecionado = null;
+            opcaoAtual = null;
+        }
+
+        // FunÃ§Ãµes para AssociaÃ§Ã£o RÃ¡pida de Professores
+        function carregarProfessoresRapidos() {
+            const container = document.getElementById('professoresRapidos');
+            container.innerHTML = '';
+            
+            professores.forEach(professor => {
+                const item = document.createElement('div');
+                item.className = 'professor-rapido';
+                item.innerHTML = `
+                    <div style="font-weight: bold; font-size: 13px;">${professor.nome}</div>
+                `;
+                item.onclick = () => {
+                    document.querySelectorAll('.professor-rapido').forEach(p => p.classList.remove('selecionado'));
+                    item.classList.add('selecionado');
+                    professorSelecionado = professor.id;
+                };
+                container.appendChild(item);
+            });
+        }
+
+        function fecharModalProfessorRapido() {
+            document.getElementById('modalProfessorRapido').style.display = 'none';
+            horarioSelecionado = null;
+            diaSelecionado = null;
+            professorSelecionado = null;
+        }
+
+        // FunÃ§Ãµes de remoÃ§Ã£o individuais (ATUALIZADAS)
+        function removerAulaDoHorario(chaveHorario) {
+            if (confirm('Remover aula deste horÃ¡rio?')) {
+                let dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+
+                // Se nÃ£o hÃ¡ dados especÃ­ficos, pode ser um slot do template fixo.
+                // Preservar o professorId do fixo para nÃ£o o perder.
+                // SÃ³ faz isso se NÃƒO estiver no modo fixo (chave comeÃ§a com 'fixed-')
+                if (!dados.aulaId && !dados.professorId && !chaveHorario.startsWith('fixed-')) {
+                    const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
+                    if (dadosFixo.professorId) {
+                        dados.professorId = dadosFixo.professorId;
+                    }
+                }
+
+                delete dados.aulaId;
+
+                // Guardar sempre (mesmo que vazio) para criar um override explÃ­cito
+                // que impede o fallback para o template fixo nesta data
+                if (Object.keys(dados).length === 0) {
+                    // Escrever objeto vazio como override do template fixo
+                    localStorage.setItem(chaveHorario, JSON.stringify({}));
+                } else {
+                    localStorage.setItem(chaveHorario, JSON.stringify(dados));
+                }
+                renderizarGradeHorarios();
+            }
+        }
+
+        function removerProfessorDoHorario(chaveHorario) {
+            if (confirm('Remover professor deste horÃ¡rio?')) {
+                let dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
+
+                // Se nÃ£o hÃ¡ dados especÃ­ficos, pode ser um slot do template fixo.
+                // Preservar o aulaId do fixo para nÃ£o o perder.
+                // SÃ³ faz isso se NÃƒO estiver no modo fixo (chave comeÃ§a com 'fixed-')
+                if (!dados.aulaId && !dados.professorId && !chaveHorario.startsWith('fixed-')) {
+                    const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
+                    if (dadosFixo.aulaId) {
+                        dados.aulaId = dadosFixo.aulaId;
+                    }
+                }
+
+                delete dados.professorId;
+
+                // Guardar sempre para criar um override explÃ­cito do template fixo
+                if (Object.keys(dados).length === 0) {
+                    localStorage.setItem(chaveHorario, JSON.stringify({}));
+                } else {
+                    localStorage.setItem(chaveHorario, JSON.stringify(dados));
+                }
+                renderizarGradeHorarios();
+            }
+        }
+
+        // FunÃ§Ãµes de remoÃ§Ã£o do horÃ¡rio FIXO
+        function removerAulaDoHorarioFixo(chaveFixo) {
+            if (confirm('Remover esta aula do horÃ¡rio fixo semanal?')) {
+                const dados = JSON.parse(localStorage.getItem(chaveFixo) || '{}');
+                delete dados.aulaId;
+                if (Object.keys(dados).length === 0) {
+                    localStorage.removeItem(chaveFixo);
+                } else {
+                    localStorage.setItem(chaveFixo, JSON.stringify(dados));
+                }
+                renderizarGradeHorarios();
+                renderizarHorarioFixoLateral();
+            }
+        }
+
+        function removerProfessorDoHorarioFixo(chaveFixo) {
+            if (confirm('Remover este professor do horÃ¡rio fixo semanal?')) {
+                const dados = JSON.parse(localStorage.getItem(chaveFixo) || '{}');
+                delete dados.professorId;
+                if (Object.keys(dados).length === 0) {
+                    localStorage.removeItem(chaveFixo);
+                } else {
+                    localStorage.setItem(chaveFixo, JSON.stringify(dados));
+                }
+                renderizarGradeHorarios();
+                renderizarHorarioFixoLateral();
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('formProfessor').addEventListener('submit', salvarProfessor);
+        document.getElementById('formAula').addEventListener('submit', salvarAula);
+
+        // InicializaÃ§Ã£o
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarDados();
+            inicializarFiltrosRelatorio();
+            renderizarProfessores();
+            renderizarAulas();
+            renderizarGradeHorarios();
+            renderizarHorarioFixoLateral();
+            inicializarSincronizacaoFirebase();
+            
+            // Garantir que a seÃ§Ã£o de horÃ¡rio fixo comece oculta
+            const secaoFixo = document.getElementById('secaoHorarioFixo');
+            if (secaoFixo) secaoFixo.style.display = 'none';
+        });
+
+        // Fechar modais ao clicar fora
+        window.onclick = function(event) {
+            const modalProfessor = document.getElementById('modalProfessor');
+            const modalAula = document.getElementById('modalAula');
+            const modalRapido = document.getElementById('modalRapido');
+            const modalProfessorRapido = document.getElementById('modalProfessorRapido');
+            const modalFirebaseConfig = document.getElementById('modalFirebaseConfig');
+            
+            if (event.target === modalProfessor) fecharModalProfessor();
+            if (event.target === modalAula) fecharModalAula();
+            if (event.target === modalRapido) fecharModalRapido();
+            if (event.target === modalProfessorRapido) fecharModalProfessorRapido();
+            if (event.target === modalFirebaseConfig) fecharModalFirebaseConfig();
+        }
+
+        // Registrar Service Worker para suporte offline e PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+                    .catch(err => console.error('Erro ao registrar Service Worker:', err));
+            });
+        }
+        // Função de teste para debug
+        function testarModoFixo() {
+            console.log('=== TESTE DO MODO FIXO ===');
+            console.log('modoFixoAtivo:', modoFixoAtivo);
+            
+            let totalAulas = 0;
+            let totalProfessores = 0;
+            const chavesFixas = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const chave = localStorage.key(i);
+                if (chave && chave.startsWith('fixed-')) {
+                    chavesFixas.push(chave);
+                    try {
+                        const dados = JSON.parse(localStorage.getItem(chave) || '{}');
+                        console.log('-', chave, ':', dados);
+                        if (dados.aulaId) totalAulas++;
+                        if (dados.professorId) totalProfessores++;
+                    } catch(e) {
+                        console.log('-', chave, ': ERRO ao analisar JSON');
+                    }
+                }
+            }
+            
+            if (chavesFixas.length === 0) {
+                console.log('Nenhum horário fixo encontrado');
+            } else {
+                console.log(\Estatísticas: \ slots fixos, \ com aulas, \ com professores\);
+            }
+            
+            console.log('=== FIM DO TESTE ===');
+        }
+
+        // Função para diagnosticar problemas com chaves fixas
+        function diagnosticarChavesFixas() {
+            console.log('=== DIAGNÓSTICO DE CHAVES FIXAS ===');
+            console.log('Formato esperado: fixed-{diaSemana}-{hora}');
+            console.log('Exemplo: fixed-2-08:00 (Quarta-feira às 08:00)');
+            console.log('');
+            
+            const chavesComProblemas = [];
+            const chavesValidas = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const chave = localStorage.key(i);
+                if (chave && chave.startsWith('fixed-')) {
+                    const match = chave.match(/^fixed-(\d+)-(.*)\$/);
+                    if (match) {
+                        const diaSemana = parseInt(match[1]);
+                        const hora = match[2];
+                        
+                        if (diaSemana >= 0 && diaSemana < 7) {
+                            // Validar formato da hora
+                            if (/^\d{2}:\d{2}\$/.test(hora)) {
+                                chavesValidas.push({
+                                    chave,
+                                    diaSemana,
+                                    hora,
+                                    diaNome: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][diaSemana]
+                                });
+                            } else {
+                                chavesComProblemas.push({
+                                    chave,
+                                    problema: \Formato de hora inválido: "\" (deve ser HH:MM)\
+                                });
+                            }
+                        } else {
+                            chavesComProblemas.push({
+                                chave,
+                                problema: \Dia da semana inválido: \ (deve ser 0-6)\
+                            });
+                        }
+                    } else {
+                        chavesComProblemas.push({
+                            chave,
+                            problema: 'Formato não corresponde ao padrão esperado'
+                        });
+                    }
+                }
+            }
+            
+            if (chavesValidas.length > 0) {
+                console.log(\\ chaves válidas encontradas:\);
+                chavesValidas.forEach(item => {
+                    console.log(\   \ -> \ \\);
+                });
+            }
+            
+            if (chavesComProblemas.length > 0) {
+                console.log(\\ chaves com problemas:\);
+                chavesComProblemas.forEach(item => {
+                    console.log(\   \ -> \\);
+                });
+                console.log('');
+                console.log('Sugestão: Use a função "limparHorarioFixo()" para remover todas as chaves e começar de novo.');
+            }
+            
+            if (chavesValidas.length === 0 && chavesComProblemas.length === 0) {
+                console.log('Nenhuma chave fixa encontrada no localStorage.');
+            }
+            
+            console.log('=== FIM DO DIAGNÓSTICO ===');
+        }
+    </script>
+</body>
+</html>
