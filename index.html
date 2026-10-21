@@ -1368,6 +1368,7 @@
                         💰 Relatório Mensal
                         <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
                         <button class="btn-pdf" onclick="testarModoFixo()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); margin-left: 8px;">🔧 Testar Fixo</button>
+                        <button class="btn-pdf" onclick="diagnosticarChavesFixas()" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); margin-left: 8px;">🔍 Diagnóstico</button>
                     </h2>
                     <div class="selecao-mes">
                         <label for="selectMes">Mês:</label>
@@ -3323,10 +3324,12 @@
         function testarModoFixo() {
             console.log('=== TESTE DO MODO FIXO ===');
             console.log('modoFixoAtivo:', modoFixoAtivo);
+            console.log('Dias da semana: 0=Segunda, 1=Terça, 2=Quarta, 3=Quinta, 4=Sexta, 5=Sábado, 6=Domingo');
             
             let totalAulas = 0;
             let totalProfessores = 0;
             const chavesFixas = [];
+            const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
             
             for (let i = 0; i < localStorage.length; i++) {
                 const chave = localStorage.key(i);
@@ -3334,19 +3337,56 @@
                     chavesFixas.push(chave);
                     try {
                         const dados = JSON.parse(localStorage.getItem(chave) || '{}');
-                        console.log('-', chave, ':', dados);
-                        if (dados.aulaId) totalAulas++;
-                        if (dados.professorId) totalProfessores++;
+                        
+                        // Extrair dia e hora da chave
+                        const match = chave.match(/^fixed-(\d+)-(.*)$/);
+                        const diaNum = match ? parseInt(match[1]) : -1;
+                        const hora = match ? match[2] : '??:??';
+                        const diaNome = diaNum >= 0 && diaNum < 7 ? diasDaSemana[diaNum] : `Dia ${diaNum}`;
+                        
+                        console.log(`- ${chave} (${diaNome} ${hora}):`, dados);
+                        
+                        if (dados.aulaId) {
+                            totalAulas++;
+                            const aula = aulas.find(a => a.id == dados.aulaId);
+                            if (aula) console.log(`  ↳ Aula: ${aula.nome} (€${aula.preco})`);
+                        }
+                        if (dados.professorId) {
+                            totalProfessores++;
+                            const professor = professores.find(p => p.id == dados.professorId);
+                            if (professor) console.log(`  ↳ Professor: ${professor.nome}`);
+                        }
+                        
+                        if (!dados.aulaId && !dados.professorId) {
+                            console.log(`  ↳ Slot vazio`);
+                        }
                     } catch(e) {
-                        console.log('-', chave, ': ERRO ao analisar JSON');
+                        console.log('-', chave, ': ERRO ao analisar JSON:', e.message);
                     }
                 }
             }
             
             if (chavesFixas.length === 0) {
-                console.log('Nenhum horário fixo encontrado');
+                console.log('✅ Nenhum horário fixo encontrado');
             } else {
-                console.log(`Estatísticas: ${chavesFixas.length} slots fixos, ${totalAulas} com aulas, ${totalProfessores} com professores`);
+                console.log(`📊 Estatísticas: ${chavesFixas.length} slots fixos, ${totalAulas} com aulas, ${totalProfessores} com professores`);
+                
+                // Mostrar distribuição por dia
+                const distribuiçãoPorDia = Array(7).fill(0);
+                chavesFixas.forEach(chave => {
+                    const match = chave.match(/^fixed-(\d+)-/);
+                    if (match) {
+                        const dia = parseInt(match[1]);
+                        if (dia >= 0 && dia < 7) distribuiçãoPorDia[dia]++;
+                    }
+                });
+                
+                console.log('📅 Distribuição por dia:');
+                distribuiçãoPorDia.forEach((count, dia) => {
+                    if (count > 0) {
+                        console.log(`  ${diasDaSemana[dia]}: ${count} slot(s)`);
+                    }
+                });
             }
             
             console.log('=== FIM DO TESTE ===');
@@ -3366,27 +3406,38 @@
                     try {
                         const dados = JSON.parse(localStorage.getItem(chave) || '{}');
                         if (dados.aulaId || dados.professorId) {
-                            // Extrair dia da semana e hora da chave
-                            const partes = chave.split('-');
-                            const diaSemana = parseInt(partes[1]); // 0=Segunda, 6=Domingo
-                            const hora = partes[2];
-                            
-                            slotsFixos.push({
-                                chave,
-                                diaSemana,
-                                hora,
-                                dados
-                            });
+                            // Extrair dia da semana e hora da chave usando regex
+                            // Formato: fixed-{diaSemana}-{hora} onde hora pode conter ':'
+                            const match = chave.match(/^fixed-(\d+)-(.*)$/);
+                            if (match) {
+                                const diaSemana = parseInt(match[1]); // 0=Segunda, 6=Domingo
+                                const hora = match[2]; // HH:MM
+                                
+                                if (diaSemana >= 0 && diaSemana < 7) {
+                                    slotsFixos.push({
+                                        chave,
+                                        diaSemana,
+                                        hora,
+                                        dados
+                                    });
+                                }
+                            }
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        console.error('Erro ao processar chave fixa:', chave, e);
+                    }
                 }
             }
             
             if (slotsFixos.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 13px;">
+                        <div style="margin-bottom: 8px; font-size: 16px; color: #8b5cf6;">🔁</div>
                         Nenhum horário fixo definido.<br>
                         <span style="font-size: 11px;">Ative o modo fixo e adicione aulas à grade.</span>
+                        <div style="margin-top: 12px; font-size: 11px; color: #64748b;">
+                            Dica: Clique em "📋 Copiar Semana" para copiar a semana atual
+                        </div>
                     </div>
                 `;
                 return;
@@ -3396,6 +3447,18 @@
             const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
             let html = '';
             
+            // Estatísticas rápidas
+            const totalAulas = slotsFixos.filter(s => s.dados.aulaId).length;
+            const totalProfessores = slotsFixos.filter(s => s.dados.professorId).length;
+            
+            html += `<div style="margin-bottom: 12px; padding: 8px 10px; background: rgba(139, 92, 246, 0.1); border-radius: 6px; border: 1px solid rgba(139, 92, 246, 0.3); font-size: 11px; color: #cbd5e1;">`;
+            html += `<div style="display: flex; justify-content: space-between;">`;
+            html += `<span>${slotsFixos.length} slots</span>`;
+            html += `<span>${totalAulas} aulas</span>`;
+            html += `<span>${totalProfessores} professores</span>`;
+            html += `</div>`;
+            html += `</div>`;
+            
             for (let dia = 0; dia < 7; dia++) {
                 const slotsDoDia = slotsFixos.filter(s => s.diaSemana === dia);
                 if (slotsDoDia.length === 0) continue;
@@ -3403,9 +3466,9 @@
                 // Ordenar por hora
                 slotsDoDia.sort((a, b) => a.hora.localeCompare(b.hora));
                 
-                html += `<div style="margin-bottom: 16px;">`;
-                html += `<div style="font-weight: 700; color: #8b5cf6; font-size: 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">`;
-                html += `<span>🔁</span>`;
+                html += `<div style="margin-bottom: 20px;">`;
+                html += `<div style="font-weight: 700; color: #8b5cf6; font-size: 13px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(139, 92, 246, 0.3);">`;
+                html += `<span style="background: rgba(139, 92, 246, 0.2); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px;">${slotsDoDia.length}</span>`;
                 html += `<span>${diasDaSemana[dia]}</span>`;
                 html += `</div>`;
                 
@@ -3413,31 +3476,48 @@
                     const aula = aulas.find(a => a.id == slot.dados.aulaId);
                     const professor = professores.find(p => p.id == slot.dados.professorId);
                     
-                    html += `<div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 11px;">`;
-                    html += `<div style="display: flex; justify-content: space-between; align-items: flex-start;">`;
-                    html += `<div>`;
-                    html += `<div style="font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${slot.hora}</div>`;
+                    html += `<div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 12px; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">`;
+                    
+                    // Hora destacada
+                    html += `<div style="position: absolute; top: -6px; left: 10px; background: #8b5cf6; color: white; font-size: 10px; font-weight: bold; padding: 1px 6px; border-radius: 10px;">${slot.hora}</div>`;
+                    
+                    html += `<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 4px;">`;
+                    html += `<div style="flex: 1;">`;
                     
                     if (aula) {
-                        html += `<div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">`;
-                        html += `<div style="width: 8px; height: 8px; border-radius: 50%; background: ${aula.cor};"></div>`;
-                        html += `<span style="color: #cbd5e1;">${aula.nome}</span>`;
+                        html += `<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">`;
+                        html += `<div style="width: 10px; height: 10px; border-radius: 50%; background: ${aula.cor}; border: 1px solid rgba(255,255,255,0.3);"></div>`;
+                        html += `<span style="font-weight: 600; color: #f8fafc;">${aula.nome}</span>`;
+                        html += `<span style="color: #34d399; font-size: 10px; margin-left: auto;">€${aula.preco.toFixed(2)}</span>`;
                         html += `</div>`;
                     }
                     
                     if (professor) {
-                        html += `<div style="color: #94a3b8; font-size: 10px;">👨‍🏫 ${professor.nome}</div>`;
+                        html += `<div style="color: #94a3b8; font-size: 11px; display: flex; align-items: center; gap: 4px;">`;
+                        html += `<span>👨‍🏫</span>`;
+                        html += `<span>${professor.nome}</span>`;
+                        html += `</div>`;
+                    }
+                    
+                    if (!aula && !professor) {
+                        html += `<div style="color: #94a3b8; font-style: italic; font-size: 11px;">Slot incompleto</div>`;
                     }
                     
                     html += `</div>`;
                     
                     // Botões de ação
-                    html += `<div style="display: flex; gap: 4px;">`;
+                    html += `<div style="display: flex; gap: 4px; margin-left: 8px;">`;
                     if (aula) {
-                        html += `<button onclick="removerAulaDoHorarioFixo('${slot.chave}')" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer;" title="Remover aula">Aula</button>`;
+                        html += `<button onclick="removerAulaDoHorarioFixo('${slot.chave}')" style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 4px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s;" 
+                                  onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'; this.style.transform='translateY(-1px)'" 
+                                  onmouseout="this.style.background='rgba(239, 68, 68, 0.25)'; this.style.transform='translateY(0)'"
+                                  title="Remover aula">Aula</button>`;
                     }
                     if (professor) {
-                        html += `<button onclick="removerProfessorDoHorarioFixo('${slot.chave}')" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 4px; padding: 2px 6px; font-size: 10px; cursor: pointer;" title="Remover professor">Prof</button>`;
+                        html += `<button onclick="removerProfessorDoHorarioFixo('${slot.chave}')" style="background: rgba(139, 92, 246, 0.25); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.5); border-radius: 4px; padding: 3px 8px; font-size: 10px; cursor: pointer; font-weight: 600; transition: all 0.2s;"
+                                  onmouseover="this.style.background='rgba(139, 92, 246, 0.4)'; this.style.transform='translateY(-1px)'" 
+                                  onmouseout="this.style.background='rgba(139, 92, 246, 0.25)'; this.style.transform='translateY(0)'"
+                                  title="Remover professor">Prof</button>`;
                     }
                     html += `</div>`;
                     
@@ -3448,5 +3528,88 @@
                 html += `</div>`;
             }
             
+            // Adicionar botão de limpar tudo
+            html += `<div style="margin-top: 16px; border-top: 1px solid rgba(139, 92, 246, 0.3); padding-top: 12px;">`;
+            html += `<button onclick="limparHorarioFixo()" style="width: 100%; background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(239, 68, 68, 0.2)); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; padding: 8px 12px; font-size: 11px; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;"
+                    onmouseover="this.style.background='linear-gradient(135deg, rgba(220, 38, 38, 0.3), rgba(239, 68, 68, 0.3))'; this.style.transform='translateY(-1px)'" 
+                    onmouseout="this.style.background='linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(239, 68, 68, 0.2))'; this.style.transform='translateY(0)'">`;
+            html += `<span>🗑️</span>`;
+            html += `<span>Limpar Todo o Horário Fixo</span>`;
+            html += `</button>`;
+            html += `<div style="font-size: 10px; color: #94a3b8; text-align: center; margin-top: 6px;">Esta ação remove todas as aulas e professores fixos</div>`;
+            html += `</div>`;
+            
             container.innerHTML = html;
+        }
+
+
+        // Função para diagnosticar problemas com chaves fixas
+        function diagnosticarChavesFixas() {
+            console.log('=== DIAGNÓSTICO DE CHAVES FIXAS ===');
+            console.log('Formato esperado: fixed-{diaSemana}-{hora}');
+            console.log('Exemplo: fixed-2-08:00 (Quarta-feira às 08:00)');
+            console.log('');
+            
+            const chavesComProblemas = [];
+            const chavesValidas = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const chave = localStorage.key(i);
+                if (chave && chave.startsWith('fixed-')) {
+                    const match = chave.match(/^fixed-(\d+)-(.*)$/);
+                    if (match) {
+                        const diaSemana = parseInt(match[1]);
+                        const hora = match[2];
+                        
+                        if (diaSemana >= 0 && diaSemana < 7) {
+                            // Validar formato da hora
+                            if (/^\d{2}:\d{2}$/.test(hora)) {
+                                chavesValidas.push({
+                                    chave,
+                                    diaSemana,
+                                    hora,
+                                    diaNome: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][diaSemana]
+                                });
+                            } else {
+                                chavesComProblemas.push({
+                                    chave,
+                                    problema: `Formato de hora inválido: "${hora}" (deve ser HH:MM)`
+                                });
+                            }
+                        } else {
+                            chavesComProblemas.push({
+                                chave,
+                                problema: `Dia da semana inválido: ${diaSemana} (deve ser 0-6)`
+                            });
+                        }
+                    } else {
+                        chavesComProblemas.push({
+                            chave,
+                            problema: 'Formato não corresponde ao padrão esperado'
+                        });
+                    }
+                }
+            }
+            
+            if (chavesValidas.length > 0) {
+                console.log(`✅ ${chavesValidas.length} chaves válidas encontradas:`);
+                chavesValidas.forEach(item => {
+                    console.log(`   ${item.chave} → ${item.diaNome} ${item.hora}`);
+                });
+            }
+            
+            if (chavesComProblemas.length > 0) {
+                console.log(`⚠️ ${chavesComProblemas.length} chaves com problemas:`);
+                chavesComProblemas.forEach(item => {
+                    console.log(`   ${item.chave} → ${item.problema}`);
+                });
+                console.log('');
+                console.log('Sugestão: Use a função "limparHorarioFixo()" para remover todas as chaves e começar de novo.');
+            }
+            
+            if (chavesValidas.length === 0 && chavesComProblemas.length === 0) {
+                console.log('ℹ️ Nenhuma chave fixa encontrada no localStorage.');
+            }
+            
+            console.log('=== FIM DO DIAGNÓSTICO ===');
         }
