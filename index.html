@@ -1271,6 +1271,7 @@
                     <h2>
                         💰 Relatório Mensal
                         <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
+                        <button class="btn-pdf" onclick="testarModoFixo()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); margin-left: 8px;">🔧 Testar Fixo</button>
                     </h2>
                     <div class="selecao-mes">
                         <label for="selectMes">Mês:</label>
@@ -2189,6 +2190,9 @@
         // Helper: lê dados do template fixo a partir de uma chave específica por data
         // chaveEspecifica formato: YYYY-MM-DD-HH:MM
         function obterDadosFixoParaChaveEspecifica(chaveEspecifica) {
+            // Se a chave começar com 'fixed-', não é uma chave específica, retorna objeto vazio
+            if (chaveEspecifica.startsWith('fixed-')) return {};
+            
             const parts = chaveEspecifica.split('-');
             if (parts.length < 4) return {};
             try {
@@ -2486,10 +2490,15 @@
         function confirmarAula() {
             if (!horarioSelecionado) return;
             
+            // Debug: mostrar qual chave está sendo usada
+            console.log('Modo fixo ativo?', modoFixoAtivo);
+            console.log('Chave selecionada:', horarioSelecionado);
+            
             const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
 
             // Preservar professorId do template fixo caso não esteja já na chave específica
-            if (!dadosAtuais.professorId) {
+            // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
+            if (!dadosAtuais.professorId && !horarioSelecionado.startsWith('fixed-')) {
                 const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
                 if (dadosFixo.professorId) {
                     dadosAtuais.professorId = dadosFixo.professorId;
@@ -2500,6 +2509,7 @@
                 if (opcaoAtual.aulaId) {
                     dadosAtuais.aulaId = opcaoAtual.aulaId;
                     localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+                    console.log('Aula existente salva na chave:', horarioSelecionado, dadosAtuais);
                 } else {
                     alert('Selecione uma aula primeiro!');
                     return;
@@ -2525,6 +2535,7 @@
                 guardarAulas();
                 dadosAtuais.aulaId = novaAula.id;
                 localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+                console.log('Aula rápida criada e salva na chave:', horarioSelecionado, dadosAtuais);
                 renderizarAulas();
             }
             
@@ -2541,7 +2552,8 @@
             const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
 
             // Preservar aulaId do template fixo caso não esteja já na chave específica
-            if (!dadosAtuais.aulaId) {
+            // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
+            if (!dadosAtuais.aulaId && !horarioSelecionado.startsWith('fixed-')) {
                 const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
                 if (dadosFixo.aulaId) {
                     dadosAtuais.aulaId = dadosFixo.aulaId;
@@ -3023,7 +3035,8 @@
 
                 // Se não há dados específicos, pode ser um slot do template fixo.
                 // Preservar o professorId do fixo para não o perder.
-                if (!dados.aulaId && !dados.professorId) {
+                // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
+                if (!dados.aulaId && !dados.professorId && !chaveHorario.startsWith('fixed-')) {
                     const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
                     if (dadosFixo.professorId) {
                         dados.professorId = dadosFixo.professorId;
@@ -3050,7 +3063,8 @@
 
                 // Se não há dados específicos, pode ser um slot do template fixo.
                 // Preservar o aulaId do fixo para não o perder.
-                if (!dados.aulaId && !dados.professorId) {
+                // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
+                if (!dados.aulaId && !dados.professorId && !chaveHorario.startsWith('fixed-')) {
                     const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
                     if (dadosFixo.aulaId) {
                         dados.aulaId = dadosFixo.aulaId;
@@ -3136,3 +3150,26 @@
     </script>
 </body>
 </html>
+
+
+        // Função de teste para debug
+        function testarModoFixo() {
+            console.log('=== TESTE DO MODO FIXO ===');
+            console.log('modoFixoAtivo:', modoFixoAtivo);
+            console.log('horarios fixos no localStorage:');
+            
+            const chavesFixas = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const chave = localStorage.key(i);
+                if (chave && chave.startsWith('fixed-')) {
+                    chavesFixas.push(chave);
+                    console.log('-', chave, ':', localStorage.getItem(chave));
+                }
+            }
+            
+            if (chavesFixas.length === 0) {
+                console.log('Nenhum horário fixo encontrado');
+            }
+            
+            console.log('=== FIM DO TESTE ===');
+        }
