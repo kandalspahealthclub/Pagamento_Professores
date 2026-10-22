@@ -1367,8 +1367,6 @@
                     <h2>
                         💰 Relatório Mensal
                         <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
-                        <button class="btn-pdf" onclick="testarModoFixo()" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); margin-left: 8px;">🔧 Testar Fixo</button>
-                        <button class="btn-pdf" onclick="diagnosticarChavesFixas()" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); margin-left: 8px;">🔍 Diagnóstico</button>
                     </h2>
                     <div class="selecao-mes">
                         <label for="selectMes">Mês:</label>
@@ -2651,10 +2649,6 @@
         function confirmarAula() {
             if (!horarioSelecionado) return;
             
-            // Debug: mostrar qual chave está sendo usada
-            console.log('Modo fixo ativo?', modoFixoAtivo);
-            console.log('Chave selecionada:', horarioSelecionado);
-            
             const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
 
             // Preservar professorId do template fixo caso não esteja já na chave específica
@@ -2670,7 +2664,8 @@
                 if (opcaoAtual.aulaId) {
                     dadosAtuais.aulaId = opcaoAtual.aulaId;
                     localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
-                    console.log('Aula existente salva na chave:', horarioSelecionado, dadosAtuais);
+                    renderizarGradeHorarios();
+                    fecharModalRapido();
                 } else {
                     alert('Selecione uma aula primeiro!');
                     return;
@@ -2696,12 +2691,13 @@
                 guardarAulas();
                 dadosAtuais.aulaId = novaAula.id;
                 localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
-                console.log('Aula rápida criada e salva na chave:', horarioSelecionado, dadosAtuais);
                 renderizarAulas();
+                renderizarGradeHorarios();
+                fecharModalRapido();
+            } else {
+                alert('Selecione uma opção primeiro!');
+                return;
             }
-            
-            renderizarGradeHorarios();
-            fecharModalRapido();
         }
 
         function confirmarProfessor() {
@@ -3311,88 +3307,9 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registrado com sucesso!', reg))
                     .catch(err => console.error('Erro ao registrar Service Worker:', err));
             });
         }
-    </script>
-</body>
-</html>
-
-
-        // Função de teste para debug
-        function testarModoFixo() {
-            console.log('=== TESTE DO MODO FIXO ===');
-            console.log('modoFixoAtivo:', modoFixoAtivo);
-            console.log('Dias da semana: 0=Segunda, 1=Terça, 2=Quarta, 3=Quinta, 4=Sexta, 5=Sábado, 6=Domingo');
-            
-            let totalAulas = 0;
-            let totalProfessores = 0;
-            const chavesFixas = [];
-            const diasDaSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-            
-            for (let i = 0; i < localStorage.length; i++) {
-                const chave = localStorage.key(i);
-                if (chave && chave.startsWith('fixed-')) {
-                    chavesFixas.push(chave);
-                    try {
-                        const dados = JSON.parse(localStorage.getItem(chave) || '{}');
-                        
-                        // Extrair dia e hora da chave
-                        const match = chave.match(/^fixed-(\d+)-(.*)$/);
-                        const diaNum = match ? parseInt(match[1]) : -1;
-                        const hora = match ? match[2] : '??:??';
-                        const diaNome = diaNum >= 0 && diaNum < 7 ? diasDaSemana[diaNum] : `Dia ${diaNum}`;
-                        
-                        console.log(`- ${chave} (${diaNome} ${hora}):`, dados);
-                        
-                        if (dados.aulaId) {
-                            totalAulas++;
-                            const aula = aulas.find(a => a.id == dados.aulaId);
-                            if (aula) console.log(`  ↳ Aula: ${aula.nome} (€${aula.preco})`);
-                        }
-                        if (dados.professorId) {
-                            totalProfessores++;
-                            const professor = professores.find(p => p.id == dados.professorId);
-                            if (professor) console.log(`  ↳ Professor: ${professor.nome}`);
-                        }
-                        
-                        if (!dados.aulaId && !dados.professorId) {
-                            console.log(`  ↳ Slot vazio`);
-                        }
-                    } catch(e) {
-                        console.log('-', chave, ': ERRO ao analisar JSON:', e.message);
-                    }
-                }
-            }
-            
-            if (chavesFixas.length === 0) {
-                console.log('✅ Nenhum horário fixo encontrado');
-            } else {
-                console.log(`📊 Estatísticas: ${chavesFixas.length} slots fixos, ${totalAulas} com aulas, ${totalProfessores} com professores`);
-                
-                // Mostrar distribuição por dia
-                const distribuiçãoPorDia = Array(7).fill(0);
-                chavesFixas.forEach(chave => {
-                    const match = chave.match(/^fixed-(\d+)-/);
-                    if (match) {
-                        const dia = parseInt(match[1]);
-                        if (dia >= 0 && dia < 7) distribuiçãoPorDia[dia]++;
-                    }
-                });
-                
-                console.log('📅 Distribuição por dia:');
-                distribuiçãoPorDia.forEach((count, dia) => {
-                    if (count > 0) {
-                        console.log(`  ${diasDaSemana[dia]}: ${count} slot(s)`);
-                    }
-                });
-            }
-            
-            console.log('=== FIM DO TESTE ===');
-        }
-
-
         // Renderiza a lista lateral do horário fixo
         function renderizarHorarioFixoLateral() {
             const container = document.getElementById('listaHorarioFixo');
@@ -3542,74 +3459,6 @@
             container.innerHTML = html;
         }
 
-
-        // Função para diagnosticar problemas com chaves fixas
-        function diagnosticarChavesFixas() {
-            console.log('=== DIAGNÓSTICO DE CHAVES FIXAS ===');
-            console.log('Formato esperado: fixed-{diaSemana}-{hora}');
-            console.log('Exemplo: fixed-2-08:00 (Quarta-feira às 08:00)');
-            console.log('');
-            
-            const chavesComProblemas = [];
-            const chavesValidas = [];
-            
-            for (let i = 0; i < localStorage.length; i++) {
-                const chave = localStorage.key(i);
-                if (chave && chave.startsWith('fixed-')) {
-                    const match = chave.match(/^fixed-(\d+)-(.*)$/);
-                    if (match) {
-                        const diaSemana = parseInt(match[1]);
-                        const hora = match[2];
-                        
-                        if (diaSemana >= 0 && diaSemana < 7) {
-                            // Validar formato da hora
-                            if (/^\d{2}:\d{2}$/.test(hora)) {
-                                chavesValidas.push({
-                                    chave,
-                                    diaSemana,
-                                    hora,
-                                    diaNome: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'][diaSemana]
-                                });
-                            } else {
-                                chavesComProblemas.push({
-                                    chave,
-                                    problema: `Formato de hora inválido: "${hora}" (deve ser HH:MM)`
-                                });
-                            }
-                        } else {
-                            chavesComProblemas.push({
-                                chave,
-                                problema: `Dia da semana inválido: ${diaSemana} (deve ser 0-6)`
-                            });
-                        }
-                    } else {
-                        chavesComProblemas.push({
-                            chave,
-                            problema: 'Formato não corresponde ao padrão esperado'
-                        });
-                    }
-                }
-            }
-            
-            if (chavesValidas.length > 0) {
-                console.log(`✅ ${chavesValidas.length} chaves válidas encontradas:`);
-                chavesValidas.forEach(item => {
-                    console.log(`   ${item.chave} → ${item.diaNome} ${item.hora}`);
-                });
-            }
-            
-            if (chavesComProblemas.length > 0) {
-                console.log(`⚠️ ${chavesComProblemas.length} chaves com problemas:`);
-                chavesComProblemas.forEach(item => {
-                    console.log(`   ${item.chave} → ${item.problema}`);
-                });
-                console.log('');
-                console.log('Sugestão: Use a função "limparHorarioFixo()" para remover todas as chaves e começar de novo.');
-            }
-            
-            if (chavesValidas.length === 0 && chavesComProblemas.length === 0) {
-                console.log('ℹ️ Nenhuma chave fixa encontrada no localStorage.');
-            }
-            
-            console.log('=== FIM DO DIAGNÓSTICO ===');
-        }
+    </script>
+</body>
+</html>
