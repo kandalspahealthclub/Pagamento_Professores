@@ -579,6 +579,32 @@
             text-shadow: 0 0 8px #facc15;
         }
 
+        /* Dia 1: marca subtil de início de mês */
+        .dia-slot.dia-mes-novo {
+            position: relative;
+        }
+
+        .dia-slot.dia-mes-novo::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 16%;
+            right: 16%;
+            height: 2px;
+            border-radius: 0 0 2px 2px;
+            background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.85), transparent);
+        }
+
+        .dia-slot.dia-mes-novo .dia-data {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .aula-slot.mes-novo {
+            outline: 1px solid rgba(251, 191, 36, 0.22);
+            outline-offset: -1px;
+        }
+
         .aula-slot {
             min-height: 80px;
             padding: 12px;
@@ -2422,6 +2448,11 @@
                    dia.getFullYear() === hoje.getFullYear();
         }
 
+        // Primeiro dia do mês: usado para a marca visual na grade
+        function ehInicioMes(dia) {
+            return dia.getDate() === 1;
+        }
+
         // FUNÇÃO ATUALIZADA: Renderizar grade com datas específicas
         function renderizarGradeHorarios() {
             const container = document.getElementById('gradeHorarios');
@@ -2437,8 +2468,9 @@
                 </div>
                 ${dias.map((dia, index) => {
                     const classeHoje = ehHoje(dia) ? 'dia-hoje' : '';
+                    const classeMes = ehInicioMes(dia) ? 'dia-mes-novo' : '';
                     return `
-                        <div class="dia-slot ${classeHoje}">
+                        <div class="dia-slot ${classeHoje} ${classeMes}">
                             <div class="dia-nome">${diasSemana[index]}</div>
                             <div class="dia-data">${formatarDataParaDia(dia)}</div>
                         </div>
@@ -2483,7 +2515,7 @@
                     const professor = professores.find(p => p.id == dados.professorId);
 
                     const slot = document.createElement('div');
-                    slot.className = 'aula-slot' + (vemDoFixo ? ' fixo' : '');
+                    slot.className = 'aula-slot' + (vemDoFixo ? ' fixo' : '') + (ehInicioMes(dia) ? ' mes-novo' : '');
 
                     if (aula) {
                         slot.style.background = aula.cor;
