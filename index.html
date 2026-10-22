@@ -1098,103 +1098,51 @@
             font-weight: 800;
         }
 
-        /* Horário Fixo */
-        .modo-fixo-ativo .grade-container {
-            outline: 3px solid #8b5cf6;
-            outline-offset: -3px;
-            box-shadow: 0 0 30px rgba(139, 92, 246, 0.35);
-        }
-
-        .badge-fixo {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            font-size: 11px;
-            opacity: 0.9;
-            background: rgba(139, 92, 246, 0.9);
-            color: white;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .btn-modo-fixo {
-            background: linear-gradient(135deg, #7c3aed, #6366f1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
-        }
-
-        .btn-modo-fixo.ativo {
-            background: linear-gradient(135deg, #059669, #10b981);
-            box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
-            animation: pulse-green 2s infinite;
-        }
-
-        @keyframes pulse-green {
-            0%, 100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 24px rgba(16, 185, 129, 0.8); }
-        }
-
-        .barra-modo-fixo {
-            display: none;
-            flex-direction: column;
-            gap: 10px;
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(99, 102, 241, 0.15));
-            border: 1px solid rgba(139, 92, 246, 0.4);
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .barra-modo-fixo.visivel { display: flex; }
-
-        .barra-modo-fixo span {
-            font-weight: 600;
-            color: #c084fc;
-            font-size: 13px;
-        }
-
-        .btn-fixo-acao {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
+        /* Dica sob o titulo da grade */
+        .dica-grade {
             font-size: 12px;
+            color: #94a3b8;
+            margin: -4px 0 14px;
+            line-height: 1.5;
+        }
+
+        .dica-grade strong { color: #c084fc; }
+
+        /* Escolha de alcance no modal de adicionar */
+        .escopo-toggle {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.45);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin: 10px 0 14px;
+            cursor: pointer;
+        }
+
+        .escopo-toggle input {
+            width: 17px;
+            height: 17px;
+            margin-top: 1px;
+            accent-color: #8b5cf6;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .escopo-titulo {
+            font-size: 13px;
             font-weight: 700;
-            transition: all 0.2s;
+            color: #e2e8f0;
+            display: block;
         }
 
-        .btn-fixo-copiar {
-            background: linear-gradient(135deg, #4f46e5, #6366f1);
-            color: white;
-            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
-        }
-        .btn-fixo-copiar:hover {
-            filter: brightness(1.15);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-        }
-
-        .btn-fixo-limpar {
-            background: linear-gradient(135deg, #dc2626, #ef4444);
-            color: white;
-            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
-        }
-        .btn-fixo-limpar:hover {
-            filter: brightness(1.15);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        .escopo-dica {
+            font-size: 11px;
+            color: #94a3b8;
+            display: block;
+            margin-top: 2px;
+            line-height: 1.4;
         }
 
         /* Aula Fixa - Estilo Destaque */
@@ -1230,23 +1178,6 @@
             z-index: 1;
         }
 
-        /* Modo fixo ativo - slots vazios têm cor diferente */
-        .modo-fixo-ativo .aula-slot.vazia {
-            background: rgba(139, 92, 246, 0.08) !important;
-            border: 2px dashed rgba(139, 92, 246, 0.4) !important;
-        }
-
-        .modo-fixo-ativo .aula-slot.vazia:hover {
-            background: rgba(139, 92, 246, 0.15) !important;
-            border-color: rgba(139, 92, 246, 0.6) !important;
-        }
-
-        /* Indicador visual para slots que vêm do fixo mas não estão em modo fixo */
-        .aula-slot:not(.fixo)[data-fixo="true"] {
-            border-left: 4px solid #8b5cf6 !important;
-        }
-
-        .aula-slot.fixo-override { outline: 2px solid #f59e0b; outline-offset: -2px; }
     </style>
 </head>
 <body>
@@ -1289,23 +1220,17 @@
                     </div>
                 </div>
 
-                <!-- Horário Fixo (visível apenas quando ativo) -->
-                <div class="section" id="secaoHorarioFixo" style="display: none;">
-                    <h2>
-                        🔁 Horário Fixo
-                        <button class="btn-add" onclick="copiarSemanaParaFixo()" style="background: linear-gradient(135deg, #7c3aed, #6366f1);">📋 Copiar Semana</button>
-                    </h2>
+                <!-- Horário Fixo: consulta do que se repete todas as semanas -->
+                <div class="section" id="secaoHorarioFixo">
+                    <h2>🔁 Horário Fixo</h2>
                     <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px; line-height: 1.4;">
-                        As aulas aqui definidas repetem-se automaticamente em <strong>todas as semanas</strong>.
+                        Estas aulas repetem-se em <strong>todas as semanas</strong>. Para adicionar, clica em <strong>+ Aula</strong> na grade com <strong>“Repetir todas as semanas”</strong> marcado.
                     </p>
                     <div class="lista-container" id="listaHorarioFixo">
                         <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 13px;">
                             Nenhum horário fixo definido.<br>
-                            <span style="font-size: 11px;">Ative o modo fixo e adicione aulas à grade.</span>
+                            <span style="font-size: 11px;">Adiciona uma aula na grade com “Repetir todas as semanas” marcado.</span>
                         </div>
-                    </div>
-                    <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()" style="width: 100%; font-size: 11px; padding: 6px 12px;">🗑️ Limpar Todo o Horário Fixo</button>
                     </div>
                 </div>
             </div>
@@ -1319,41 +1244,10 @@
                         <div class="info-semana" id="infoSemana">Carregando...</div>
                         <button class="btn-semana" onclick="mudarSemana(1)">Próxima Semana →</button>
                         <button class="btn-semana btn-hoje" onclick="irParaSemanaAtual()" title="Ir para a semana de hoje">📅 Hoje</button>
-                        <button class="btn-modo-fixo" id="btnModoFixo" onclick="toggleModoFixo()" title="Ativar edição de horário fixo semanal">🔁 Horário Fixo</button>
-                    </div>
-
-                    <!-- Barra de ações do modo fixo -->
-                    <div class="barra-modo-fixo" id="barraModoFixo">
-                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-size: 20px;">🔁</span>
-                                <div>
-                                    <div style="font-weight: 700; color: #8b5cf6; font-size: 14px;">Modo Horário Fixo Ativo</div>
-                                    <div style="font-size: 12px; color: #cbd5e1;">As aulas que adicionar aqui aparecerão automaticamente em <strong>todas as semanas</strong>.</div>
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button class="btn-fixo-acao btn-fixo-copiar" onclick="copiarSemanaParaFixo()" title="Copiar horários da semana atual para o modelo fixo">📋 Copiar Semana</button>
-                                <button class="btn-fixo-acao btn-fixo-limpar" onclick="limparHorarioFixo()" title="Limpar todo o horário fixo">🗑️ Limpar Fixo</button>
-                            </div>
-                        </div>
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139, 92, 246, 0.3); font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div style="width: 14px; height: 14px; border-radius: 3px; background: linear-gradient(135deg, #8b5cf6, #6366f1); border: 2px solid rgba(255,255,255,0.4);"></div>
-                                <span><strong>Aula Fixa</strong> – Repete todas as semanas</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <div style="width: 14px; height: 14px; border-radius: 3px; background: currentColor; border: 1px solid rgba(255,255,255,0.3);"></div>
-                                <span>Aula Normal – Apenas esta semana</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-                                <span>📁 Veja todas as aulas fixas na</span>
-                                <button onclick="document.getElementById('secaoHorarioFixo').scrollIntoView({behavior: 'smooth'})" style="background: none; border: 1px solid rgba(139, 92, 246, 0.5); color: #a78bfa; padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">seção lateral →</button>
-                            </div>
-                        </div>
                     </div>
 
                     <h2>📅 Grade Semanal de Aulas</h2>
+                    <p class="dica-grade">Ao clicar em <strong>+ Aula</strong>, escolhes se a aula é só desta data ou se se repete <strong>todas as semanas</strong> 🔁.</p>
                     <div class="grade-header" id="gradeHeader">
                         <!-- Cabeçalho será gerado via JavaScript -->
                     </div>
@@ -1489,6 +1383,14 @@
         <div class="modal-rapido-content">
             <h3>📅 Adicionar Aula ao Horário</h3>
             <p style="font-size: 13px; margin: 8px 0;"><strong id="infoHorario">{{DIA}}</strong> às <strong id="infoHora">{{HORA}}</strong></p>
+
+            <label class="escopo-toggle" for="aulaRepetirSemanas">
+                <input type="checkbox" id="aulaRepetirSemanas" checked onchange="atualizarDicaEscopo()">
+                <span>
+                    <span class="escopo-titulo">🔁 Repetir todas as semanas</span>
+                    <span class="escopo-dica" id="dicaEscopoAula">Fica guardada no horário fixo e aparece em todas as semanas.</span>
+                </span>
+            </label>
             
             <div class="opcoes-rapidas">
                 <div class="opcao-rapida" onclick="abrirOpcao('aula-existente')">
@@ -1550,6 +1452,14 @@
         <div class="modal-professor-rapido-content">
             <h3>👨‍🏫 Adicionar Professor ao Horário</h3>
             <p style="font-size: 13px; margin: 8px 0;"><strong id="infoHorarioProfessor">{{DIA}}</strong> às <strong id="infoHoraProfessor">{{HORA}}</strong></p>
+
+            <label class="escopo-toggle" for="professorRepetirSemanas">
+                <input type="checkbox" id="professorRepetirSemanas" checked onchange="atualizarDicaEscopo()">
+                <span>
+                    <span class="escopo-titulo">🔁 Repetir todas as semanas</span>
+                    <span class="escopo-dica" id="dicaEscopoProfessor">O professor fica neste horário todas as semanas.</span>
+                </span>
+            </label>
             
             <div class="professores-rapidos" id="professoresRapidos">
                 <!-- Professores serão carregados aqui -->
@@ -2253,7 +2163,8 @@
         let professorSelecionado = null;
         let horarioEditando = null;
         let semanaAtual = 0;
-        let modoFixoAtivo = false;
+        let horarioFixoSelecionado = null;
+        let excecaoNestaData = false;
 
         // ---- HORÁRIO FIXO: Helpers ----
 
@@ -2310,12 +2221,10 @@
             if (rawEspecifico !== null) {
                 let dadosEspecificos = {};
                 try { dadosEspecificos = JSON.parse(rawEspecifico); } catch(e) {}
-                const temDados = dadosEspecificos.aulaId || dadosEspecificos.professorId;
-                return {
-                    dados: dadosEspecificos,
-                    fonte: temDados ? 'especifico' : 'vazio',
-                    chave: chaveEspecifica
-                };
+                if (dadosEspecificos.aulaId || dadosEspecificos.professorId) {
+                    return { dados: dadosEspecificos, fonte: 'especifico', chave: chaveEspecifica };
+                }
+                // Override vazio: não esconde o horário fixo, cai no fallback abaixo
             }
 
             // Sem chave específica — fallback para template fixo
@@ -2329,103 +2238,42 @@
             return { dados: {}, fonte: 'vazio', chave: chaveEspecifica };
         }
 
-        // Toggle do modo de edição de horário fixo
-        function toggleModoFixo() {
-            modoFixoAtivo = !modoFixoAtivo;
-            const btn = document.getElementById('btnModoFixo');
-            const barra = document.getElementById('barraModoFixo');
-            const secaoFixo = document.getElementById('secaoHorarioFixo');
-            
-            if (modoFixoAtivo) {
-                btn.classList.add('ativo');
-                btn.textContent = '✅ Fixo Ativo';
-                barra.classList.add('visivel');
-                secaoFixo.style.display = 'block';
-            } else {
-                btn.classList.remove('ativo');
-                btn.textContent = '🔁 Horário Fixo';
-                barra.classList.remove('visivel');
-                secaoFixo.style.display = 'none';
-            }
-            renderizarGradeHorarios();
-            renderizarHorarioFixoLateral();
-        }
+        // Diz, em cada modal, se o que vai ser adicionado é da data ou de todas as semanas
+        function atualizarDicaEscopo() {
+            const checkAula = document.getElementById('aulaRepetirSemanas');
+            const checkProfessor = document.getElementById('professorRepetirSemanas');
+            const dicaAula = document.getElementById('dicaEscopoAula');
+            const dicaProfessor = document.getElementById('dicaEscopoProfessor');
 
-        // Copia os dados da semana atual para o template fixo
-        function copiarSemanaParaFixo() {
-            if (!confirm('Copiar os horários da semana atual para o template fixo? O template fixo anterior será substituído.')) return;
-            const dias = obterDiasDaSemana(semanaAtual);
-            // Limpar fixo antes
-            for (let i = localStorage.length - 1; i >= 0; i--) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('fixed-')) originalRemoveItem.call(localStorage, k);
-            }
-            dias.forEach((dia, idx) => {
-                horarios.forEach(hora => {
-                    const chave = criarChaveHorario(dia, hora);
-                    let dados = {};
-                    try { dados = JSON.parse(localStorage.getItem(chave) || '{}'); } catch(e) {}
-                    if (dados.aulaId || dados.professorId) {
-                        guardarHorarioFixo(idx, hora, dados);
-                    }
-                });
-            });
-            alert('Horário fixo atualizado com os dados da semana atual!');
-            renderizarGradeHorarios();
-        }
-
-        // Limpa apenas as aulas do template fixo (mantém professores)
-        function limparAulasFixas() {
-            if (!confirm('Tem a certeza que quer apagar todas as aulas do horário fixo semanal? Os professores permanecerão.')) return;
-            
-            let removidas = 0;
-            for (let i = localStorage.length - 1; i >= 0; i--) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('fixed-')) {
-                    try {
-                        const dados = JSON.parse(localStorage.getItem(k) || '{}');
-                        if (dados.aulaId) {
-                            delete dados.aulaId;
-                            removidas++;
-                            if (Object.keys(dados).length === 0) {
-                                localStorage.removeItem(k);
-                            } else {
-                                localStorage.setItem(k, JSON.stringify(dados));
-                            }
-                        }
-                    } catch(e) {}
+            if (checkAula && dicaAula) {
+                if (checkAula.checked) {
+                    dicaAula.textContent = excecaoNestaData
+                        ? '⚠️ Esta data já tem uma alteração própria, que continua a ter prioridade.'
+                        : 'Fica guardada no horário fixo e aparece em todas as semanas.';
+                } else {
+                    dicaAula.textContent = 'Substitui o horário apenas nesta data.';
                 }
             }
-            
-            renderizarGradeHorarios();
-            alert(`Removidas ${removidas} aulas do horário fixo.`);
-        }
 
-        // Limpa apenas os professores do template fixo (mantém aulas)
-        function limparProfessoresFixos() {
-            if (!confirm('Tem a certeza que quer apagar todos os professores do horário fixo semanal? As aulas permanecerão.')) return;
-            
-            let removidos = 0;
-            for (let i = localStorage.length - 1; i >= 0; i--) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('fixed-')) {
-                    try {
-                        const dados = JSON.parse(localStorage.getItem(k) || '{}');
-                        if (dados.professorId) {
-                            delete dados.professorId;
-                            removidos++;
-                            if (Object.keys(dados).length === 0) {
-                                localStorage.removeItem(k);
-                            } else {
-                                localStorage.setItem(k, JSON.stringify(dados));
-                            }
-                        }
-                    } catch(e) {}
+            if (checkProfessor && dicaProfessor) {
+                if (checkProfessor.checked) {
+                    dicaProfessor.textContent = excecaoNestaData
+                        ? '⚠️ Esta data já tem uma alteração própria, que continua a ter prioridade.'
+                        : 'O professor fica neste horário todas as semanas.';
+                } else {
+                    dicaProfessor.textContent = 'O professor entra apenas nesta data.';
                 }
             }
-            
-            renderizarGradeHorarios();
-            alert(`Removidos ${removidos} professores do horário fixo.`);
+        }
+
+        // Uma data tem exceção quando já existe uma entrada própria para ela
+        function existeExcecaoNaData(chaveEspecifica) {
+            const raw = localStorage.getItem(chaveEspecifica);
+            if (raw === null) return false;
+            try {
+                const dados = JSON.parse(raw);
+                return Boolean(dados && (dados.aulaId || dados.professorId));
+            } catch(e) { return false; }
         }
 
         // Limpa todo o template fixo
@@ -2527,143 +2375,140 @@
                 `;
                 container.appendChild(horaSlot);
                 
-                // MODO FIXO ou ESPECÍFICO POR DATA
-                dias.forEach((dia, diaIdx) => {
+                // Cada célula mostra a exceção da data; sem exceção, usa o horário fixo
+                dias.forEach(dia => {
                     const diaSemana = ((dia.getDay() + 6) % 7);
                     const chaveEspecifica = criarChaveHorario(dia, hora);
                     const chaveFixo = criarChaveFixo(diaSemana, hora);
 
-                    // Em modo fixo: edita o template. Fora do modo fixo: usa camada dupla.
-                    let dados, chaveParaEdicao, vemDoFixo;
-
-                    if (modoFixoAtivo) {
-                        dados = obterHorarioFixo(diaSemana, hora);
-                        chaveParaEdicao = chaveFixo;
-                        vemDoFixo = false; // estamos em modo edição direta do fixo
-                    } else {
-                        const resultado = obterDadosSlot(dia, hora);
-                        dados = resultado.dados;
-                        chaveParaEdicao = resultado.chave; // sempre a chave específica por data
-                        vemDoFixo = resultado.fonte === 'fixo';
-                    }
+                    const resultado = obterDadosSlot(dia, hora);
+                    const dados = resultado.dados;
+                    const vemDoFixo = resultado.fonte === 'fixo';
 
                     const aula = aulas.find(a => a.id == dados.aulaId);
                     const professor = professores.find(p => p.id == dados.professorId);
-                    
+
                     const slot = document.createElement('div');
                     slot.className = 'aula-slot' + (vemDoFixo ? ' fixo' : '');
-                    
+
                     if (aula) {
                         slot.style.background = aula.cor;
                     } else if (professor) {
                         slot.style.background = '#334155';
                     } else {
                         slot.className += ' vazia';
-                        slot.style.background = modoFixoAtivo ? 'rgba(139, 92, 246, 0.08)' : '';
                     }
-                    
-                    // Adicionar atributo data para indicar se vem do fixo
-                    if (vemDoFixo) {
-                        slot.setAttribute('data-fixo', 'true');
-                    }
-                    
+
                     let conteudo = '';
-                    // O badge fixo agora é feito via CSS (pseudoelementos), então removemos o HTML
 
                     if (aula) {
                         conteudo += `<div class="aula-nome-grade">${aula.nome}</div>`;
                         conteudo += `<div class="aula-preco-grade">€ ${aula.preco.toFixed(2)}</div>`;
                     }
-                    
+
                     if (professor) {
                         conteudo += `<div class="aula-professor-grade">👨‍🏫 ${professor.nome}</div>`;
                     }
 
-                    // Em modo fixo, os botões de remover operam na chave fixa
+                    // Célula fixa: o × remove de todas as semanas.
+                    // Célula de exceção: o × remove só desta data.
                     let botoesRemocao = '';
-                    if (modoFixoAtivo) {
-                        if (aula) botoesRemocao += `<button class="btn-remover-aula" title="Remover aula do horário fixo" onclick="event.stopPropagation(); removerAulaDoHorarioFixo('${chaveFixo}')">×</button>`;
-                        if (professor) botoesRemocao += `<button class="btn-remover-professor" title="Remover professor do horário fixo" onclick="event.stopPropagation(); removerProfessorDoHorarioFixo('${chaveFixo}')">×</button>`;
-                    } else {
-                        if (aula) botoesRemocao += `<button class="btn-remover-aula" title="Remover aula deste horário" onclick="event.stopPropagation(); removerAulaDoHorario('${chaveParaEdicao}')">×</button>`;
-                        if (professor) botoesRemocao += `<button class="btn-remover-professor" title="Remover professor deste horário" onclick="event.stopPropagation(); removerProfessorDoHorario('${chaveParaEdicao}')">×</button>`;
+                    if (aula) {
+                        botoesRemocao += vemDoFixo
+                            ? `<button class="btn-remover-aula" title="Remover esta aula de todas as semanas" onclick="event.stopPropagation(); removerAulaDoHorarioFixo('${chaveFixo}')">×</button>`
+                            : `<button class="btn-remover-aula" title="Remover esta aula só desta data" onclick="event.stopPropagation(); removerAulaDoHorario('${chaveEspecifica}')">×</button>`;
                     }
-                    
+                    if (professor) {
+                        botoesRemocao += vemDoFixo
+                            ? `<button class="btn-remover-professor" title="Remover este professor de todas as semanas" onclick="event.stopPropagation(); removerProfessorDoHorarioFixo('${chaveFixo}')">×</button>`
+                            : `<button class="btn-remover-professor" title="Remover este professor só desta data" onclick="event.stopPropagation(); removerProfessorDoHorario('${chaveEspecifica}')">×</button>`;
+                    }
+
                     let botoesAdicao = '';
                     if (!aula || !professor) {
-                        const chaveModal = modoFixoAtivo ? chaveFixo : chaveParaEdicao;
-                        const diaLabel = modoFixoAtivo ? diasSemana[diaSemana] : formatarDataParaDia(dia);
+                        const diaLabel = `${diasSemana[diaSemana]}, ${formatarDataParaDia(dia)}`;
                         botoesAdicao = `
                             <div class="botoes-adicionar">
-                                ${!aula ? `<button class="btn-add-horario" onclick="abrirModalRapido('${chaveModal}', '${diaLabel}', '${hora}')">+ Aula</button>` : ''}
-                                ${!professor ? `<button class="btn-add-professor" onclick="abrirModalProfessorRapido('${chaveModal}', '${diaLabel}', '${hora}')">+ Professor</button>` : ''}
+                                ${!aula ? `<button class="btn-add-horario" onclick="abrirModalRapido('${chaveEspecifica}', '${chaveFixo}', '${diaLabel}', '${hora}')">+ Aula</button>` : ''}
+                                ${!professor ? `<button class="btn-add-professor" onclick="abrirModalProfessorRapido('${chaveEspecifica}', '${chaveFixo}', '${diaLabel}', '${hora}')">+ Professor</button>` : ''}
                             </div>
                         `;
                     }
-                    
+
                     slot.innerHTML = `
                         ${botoesRemocao}
                         ${conteudo}
                         ${botoesAdicao}
                     `;
-                    
+
                     container.appendChild(slot);
                 });
             });
-            
+
             renderizarResumoMensalCompleto();
             renderizarHorarioFixoLateral();
         }
 
-        // FUNÇÕES ATUALIZADAS: Modais agora recebem chave específica por data
-        function abrirModalRapido(chaveHorario, diaDisplay, hora) {
+        // Modais recebem a chave da data e a chave do horário fixo
+        function abrirModalRapido(chaveHorario, chaveFixo, diaDisplay, hora) {
             horarioSelecionado = chaveHorario;
+            horarioFixoSelecionado = chaveFixo;
             diaSelecionado = diaDisplay;
             opcaoAtual = null;
-            
+            excecaoNestaData = existeExcecaoNaData(chaveHorario);
+
+            const repetir = document.getElementById('aulaRepetirSemanas');
+            if (repetir) repetir.checked = true;
+            atualizarDicaEscopo();
+
             const modal = document.getElementById('modalRapido');
             document.getElementById('infoHorario').textContent = diaDisplay;
             document.getElementById('infoHora').textContent = formatarHoraParaVisual(hora);
-            
+
             document.getElementById('opcao-aula-existente').style.display = 'none';
             document.getElementById('opcao-aula-rapida').style.display = 'none';
             document.getElementById('btnConfirmarAula').style.display = 'none';
-            
+
             modal.style.display = 'flex';
         }
 
-        function abrirModalProfessorRapido(chaveHorario, diaDisplay, hora) {
+        function abrirModalProfessorRapido(chaveHorario, chaveFixo, diaDisplay, hora) {
             horarioSelecionado = chaveHorario;
+            horarioFixoSelecionado = chaveFixo;
             diaSelecionado = diaDisplay;
             professorSelecionado = null;
-            
+            excecaoNestaData = existeExcecaoNaData(chaveHorario);
+
+            const repetir = document.getElementById('professorRepetirSemanas');
+            if (repetir) repetir.checked = true;
+            atualizarDicaEscopo();
+
             const modal = document.getElementById('modalProfessorRapido');
             document.getElementById('infoHorarioProfessor').textContent = diaDisplay;
             document.getElementById('infoHoraProfessor').textContent = formatarHoraParaVisual(hora);
-            
+
             carregarProfessoresRapidos();
             modal.style.display = 'flex';
         }
 
-        // FUNÇÕES ATUALIZADAS: Confirmações usam chave específica
         function confirmarAula() {
             if (!horarioSelecionado) return;
-            
-            const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
 
-            // Preservar professorId do template fixo caso não esteja já na chave específica
-            // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
-            if (!dadosAtuais.professorId && !horarioSelecionado.startsWith('fixed-')) {
-                const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
-                if (dadosFixo.professorId) {
-                    dadosAtuais.professorId = dadosFixo.professorId;
-                }
+            // Marcado: grava no horário fixo (todas as semanas). Desmarcado: só nesta data.
+            const repetir = document.getElementById('aulaRepetirSemanas').checked;
+            const chaveDestino = repetir ? horarioFixoSelecionado : horarioSelecionado;
+            const dadosAtuais = JSON.parse(localStorage.getItem(chaveDestino) || '{}');
+
+            // Numa exceção por data, herda o professor do horário fixo se ainda não tiver um
+            if (!repetir && !dadosAtuais.professorId) {
+                const dadosFixo = JSON.parse(localStorage.getItem(horarioFixoSelecionado) || '{}');
+                if (dadosFixo.professorId) dadosAtuais.professorId = dadosFixo.professorId;
             }
-            
+
             if (opcaoAtual === 'aula-existente' || opcaoAtual?.tipo === 'aula-existente') {
                 if (opcaoAtual.aulaId) {
                     dadosAtuais.aulaId = opcaoAtual.aulaId;
-                    localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+                    localStorage.setItem(chaveDestino, JSON.stringify(dadosAtuais));
                     renderizarGradeHorarios();
                     fecharModalRapido();
                 } else {
@@ -2674,23 +2519,23 @@
                 const nome = document.getElementById('aulaRapidaNome').value;
                 const preco = document.getElementById('aulaRapidaPreco').value;
                 const cor = document.getElementById('aulaRapidaCor').value;
-                
+
                 if (!nome || !preco) {
                     alert('Preencha todos os campos!');
                     return;
                 }
-                
+
                 const novaAula = {
                     id: Date.now(),
                     nome: nome,
                     preco: parseFloat(preco),
                     cor: cor
                 };
-                
+
                 aulas.push(novaAula);
                 guardarAulas();
                 dadosAtuais.aulaId = novaAula.id;
-                localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
+                localStorage.setItem(chaveDestino, JSON.stringify(dadosAtuais));
                 renderizarAulas();
                 renderizarGradeHorarios();
                 fecharModalRapido();
@@ -2705,21 +2550,20 @@
                 alert('Selecione um professor primeiro!');
                 return;
             }
-            
-            const dadosAtuais = JSON.parse(localStorage.getItem(horarioSelecionado) || '{}');
 
-            // Preservar aulaId do template fixo caso não esteja já na chave específica
-            // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
-            if (!dadosAtuais.aulaId && !horarioSelecionado.startsWith('fixed-')) {
-                const dadosFixo = obterDadosFixoParaChaveEspecifica(horarioSelecionado);
-                if (dadosFixo.aulaId) {
-                    dadosAtuais.aulaId = dadosFixo.aulaId;
-                }
+            const repetir = document.getElementById('professorRepetirSemanas').checked;
+            const chaveDestino = repetir ? horarioFixoSelecionado : horarioSelecionado;
+            const dadosAtuais = JSON.parse(localStorage.getItem(chaveDestino) || '{}');
+
+            // Numa exceção por data, herda a aula do horário fixo se ainda não tiver uma
+            if (!repetir && !dadosAtuais.aulaId) {
+                const dadosFixo = JSON.parse(localStorage.getItem(horarioFixoSelecionado) || '{}');
+                if (dadosFixo.aulaId) dadosAtuais.aulaId = dadosFixo.aulaId;
             }
 
             dadosAtuais.professorId = professorSelecionado;
-            localStorage.setItem(horarioSelecionado, JSON.stringify(dadosAtuais));
-            
+            localStorage.setItem(chaveDestino, JSON.stringify(dadosAtuais));
+
             renderizarGradeHorarios();
             fecharModalProfessorRapido();
         }
@@ -3190,9 +3034,8 @@
             if (confirm('Remover aula deste horário?')) {
                 let dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
 
-                // Se não há dados específicos, pode ser um slot do template fixo.
-                // Preservar o professorId do fixo para não o perder.
-                // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
+                // Só há dados próprios quando a chave é de uma data.
+                // Se não houver dados nesta data, herda o professorId do horário fixo.
                 if (!dados.aulaId && !dados.professorId && !chaveHorario.startsWith('fixed-')) {
                     const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
                     if (dadosFixo.professorId) {
@@ -3202,11 +3045,9 @@
 
                 delete dados.aulaId;
 
-                // Guardar sempre (mesmo que vazio) para criar um override explícito
-                // que impede o fallback para o template fixo nesta data
+                // Sem dados próprios, a data volta a seguir o horário fixo
                 if (Object.keys(dados).length === 0) {
-                    // Escrever objeto vazio como override do template fixo
-                    localStorage.setItem(chaveHorario, JSON.stringify({}));
+                    localStorage.removeItem(chaveHorario);
                 } else {
                     localStorage.setItem(chaveHorario, JSON.stringify(dados));
                 }
@@ -3218,9 +3059,8 @@
             if (confirm('Remover professor deste horário?')) {
                 let dados = JSON.parse(localStorage.getItem(chaveHorario) || '{}');
 
-                // Se não há dados específicos, pode ser um slot do template fixo.
-                // Preservar o aulaId do fixo para não o perder.
-                // Só faz isso se NÃO estiver no modo fixo (chave começa com 'fixed-')
+                // Só há dados próprios quando a chave é de uma data.
+                // Se não houver dados nesta data, herda o aulaId do horário fixo.
                 if (!dados.aulaId && !dados.professorId && !chaveHorario.startsWith('fixed-')) {
                     const dadosFixo = obterDadosFixoParaChaveEspecifica(chaveHorario);
                     if (dadosFixo.aulaId) {
@@ -3230,9 +3070,9 @@
 
                 delete dados.professorId;
 
-                // Guardar sempre para criar um override explícito do template fixo
+                // Sem dados próprios, a data volta a seguir o horário fixo
                 if (Object.keys(dados).length === 0) {
-                    localStorage.setItem(chaveHorario, JSON.stringify({}));
+                    localStorage.removeItem(chaveHorario);
                 } else {
                     localStorage.setItem(chaveHorario, JSON.stringify(dados));
                 }
@@ -3282,10 +3122,6 @@
             renderizarGradeHorarios();
             renderizarHorarioFixoLateral();
             inicializarSincronizacaoFirebase();
-            
-            // Garantir que a seção de horário fixo comece oculta
-            const secaoFixo = document.getElementById('secaoHorarioFixo');
-            if (secaoFixo) secaoFixo.style.display = 'none';
         });
 
         // Fechar modais ao clicar fora
@@ -3351,10 +3187,7 @@
                     <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 13px;">
                         <div style="margin-bottom: 8px; font-size: 16px; color: #8b5cf6;">🔁</div>
                         Nenhum horário fixo definido.<br>
-                        <span style="font-size: 11px;">Ative o modo fixo e adicione aulas à grade.</span>
-                        <div style="margin-top: 12px; font-size: 11px; color: #64748b;">
-                            Dica: Clique em "📋 Copiar Semana" para copiar a semana atual
-                        </div>
+                        <span style="font-size: 11px;">Adiciona uma aula na grade com “Repetir todas as semanas” marcado.</span>
                     </div>
                 `;
                 return;
