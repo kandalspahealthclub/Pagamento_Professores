@@ -1164,6 +1164,7 @@
             border-radius: 4px;
             font-weight: bold;
             z-index: 2;
+            pointer-events: none;
         }
 
         .aula-slot.fixo::after {
@@ -1176,6 +1177,8 @@
             background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1));
             border-radius: 10px;
             z-index: 1;
+            /* Decorativo: não pode bloquear os botões da célula */
+            pointer-events: none;
         }
 
     </style>
